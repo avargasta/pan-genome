@@ -25,7 +25,7 @@ library
     , liquidhaskell-boot
   default-language: Haskell2010
 
-executable goedel
+executable pan-genome
     import:           warnings
     main-is:          Main.hs
     build-depends:    base >=4.7 && <5

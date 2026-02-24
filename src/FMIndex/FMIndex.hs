@@ -1,4 +1,4 @@
-module FMIndex where
+module FMIndex.FMIndex where
 
 import qualified Data.Vector.Unboxed as U
 

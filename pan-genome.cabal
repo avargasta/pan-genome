@@ -12,7 +12,8 @@ common warnings
 
 library
   exposed-modules:
-     FindIDRight  
+       FindIDRight  
+     , FMIndex.FMIndex
   hs-source-dirs:
       src
   ghc-options:
@@ -20,6 +21,7 @@ library
   build-depends:
       base >=4.7 && <5
     , containers
+    , vector
     , liquid-prelude
     , liquidhaskell
     , liquidhaskell-boot

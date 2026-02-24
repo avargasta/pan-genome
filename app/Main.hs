@@ -1,6 +1,10 @@
 module Main where
 
 main :: IO ()
+main = putStrLn "Hello, world!"
+
+
+{-
 main = do
   text <- loadGenome
   let biFM = buildBiFM text
@@ -8,3 +12,5 @@ main = do
   let scheme = generateScheme 2
   let matches = approxMatch biFM scheme 2 pattern
   print matches
+
+-}

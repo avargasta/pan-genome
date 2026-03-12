@@ -1,4 +1,3 @@
-- Try to fix the build! 
 
 - Definition of the FMIndex structure and operations on it
 

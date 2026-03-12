@@ -38,6 +38,8 @@ executable pan-genome
     build-depends:
         base  >=4.7 && <5
       , containers
+      , vector
+      , pan-genome
       , liquid-prelude
       , liquidhaskell
       , liquidhaskell-boot

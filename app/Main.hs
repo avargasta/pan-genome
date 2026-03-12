@@ -1,9 +1,18 @@
 module Main where
 
+import qualified Data.Vector.Unboxed as U
+-- import FMIndex.FMIndex
+
 main :: IO ()
-main = putStrLn "Hello, world!"
+main = do
+  let txt = U.fromList "banana"
+--   let sa = buildSA txt
+--   let bwt = buildBWT txt sa
 
-
+  putStrLn $ "Text: " ++ show (U.toList txt)
+--   putStrLn $ "Suffix Array: " ++ show (U.toList sa)
+--   putStrLn $ "BWT: " ++ show (U.toList bwt)
+  
 {-
 main = do
   text <- loadGenome

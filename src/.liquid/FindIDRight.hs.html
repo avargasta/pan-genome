@@ -1,0 +1,30 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<title>src/FindIDRight.hs</title>
+</head>
+<head>
+<link type='text/css' rel='stylesheet' href='syntax.css' />
+</head>
+
+<body>
+<hr>
+Put mouse over identifiers to see inferred types
+<pre><span class=hs-linenum> 1: </span><a class=annot href="#"><span class=annottext>GHC.Internal.Types.Module</span><span class='hs-keyword'>module</span></a> <span class='hs-conid'>FindIDRight</span> <span class='hs-keyword'>where</span>
+<span class=hs-linenum> 2: </span>
+<span class=hs-linenum> 3: </span>
+<span class=hs-linenum> 4: </span><span class='hs-definition'>findIDRight</span> <span class='hs-keyglyph'>::</span> <span class='hs-keyglyph'>[</span><span class='hs-conid'>Int</span><span class='hs-keyglyph'>]</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-keyglyph'>[</span><span class='hs-conid'>Int</span><span class='hs-keyglyph'>]</span>
+<span class=hs-linenum> 5: </span><a class=annot href="#"><span class=annottext>[GHC.Internal.Types.Int] -&gt; [GHC.Internal.Types.Int]</span><span class='hs-definition'>findIDRight</span></a> <span class='hs-conid'>[]</span> <span class='hs-keyglyph'>=</span> <a class=annot href="#"><span class=annottext>{VV : forall a &lt;p :: a a -&gt; Bool&gt;.
+      {v : [a]&lt;\x3 VV -&gt; {VV : a&lt;p x3&gt; | true}&gt; | len v == 0} | VV == []}</span><span class='hs-conid'>[]</span></a>
+<span class=hs-linenum> 6: </span><span class='hs-definition'>findIDRight</span> <span class='hs-layout'>(</span><span class='hs-varid'>x</span><span class='hs-conop'>:</span><span class='hs-varid'>xs</span><span class='hs-layout'>)</span> <span class='hs-keyglyph'>=</span> <a class=annot href="#"><span class=annottext>{v : GHC.Internal.Types.Int | v == x##a1Cw}</span><span class='hs-varid'>x</span></a> <span class='hs-conop'>:</span> <a class=annot href="#"><span class=annottext>[GHC.Internal.Types.Int]</span><span class='hs-varid'>findIDRight</span></a> <a class=annot href="#"><span class=annottext>{v : [GHC.Internal.Types.Int] | v == xs##a1Cx
+                                &amp;&amp; len v &gt;= 0}</span><span class='hs-varid'>xs</span></a>
+<span class=hs-linenum> 7: </span>
+<span class=hs-linenum> 8: </span>
+<span class=hs-linenum> 9: </span><span class='hs-keyword'>{-@</span> <span class='hs-varid'>foo</span> <span class='hs-keyglyph'>::</span> <span class='hs-keyword'>{v:</span><span class='hs-conid'>Int</span> <span class='hs-keyword'>| v /= 0}</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Int</span> <span class='hs-keyword'>@-}</span>
+<span class=hs-linenum>10: </span><span class='hs-definition'>foo</span> <span class='hs-keyglyph'>::</span> <span class='hs-conid'>Int</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Int</span> 
+<span class=hs-linenum>11: </span><a class=annot href="#"><span class=annottext>{v : GHC.Internal.Types.Int | v /= 0} -&gt; GHC.Internal.Types.Int</span><span class='hs-definition'>foo</span></a> <a class=annot href="#"><span class=annottext>{v : GHC.Internal.Types.Int | v /= 0}</span><span class='hs-varid'>x</span></a> <span class='hs-keyglyph'>=</span> <a class=annot href="#"><span class=annottext>GHC.Internal.Types.Int</span><span class='hs-num'>42</span></a> <span class='hs-varop'>`div`</span> <a class=annot href="#"><span class=annottext>{v : GHC.Internal.Types.Int | v == x##a1Cy
+                              &amp;&amp; v /= 0}</span><span class='hs-varid'>x</span></a>
+<span class=hs-linenum>12: </span>
+<span class=hs-linenum>13: </span><a class=annot href="#"><span class=annottext>GHC.Internal.Bignum.Integer.Integer</span><span class='hs-definition'>bar</span></a> <span class='hs-keyglyph'>=</span> <a class=annot href="#"><span class=annottext>[GHC.Internal.Bignum.Integer.Integer]</span><span class='hs-keyglyph'>[</span></a><a class=annot href="#"><span class=annottext>GHC.Internal.Bignum.Integer.Integer</span><span class='hs-num'>1</span></a><span class='hs-layout'>,</span><a class=annot href="#"><span class=annottext>GHC.Internal.Bignum.Integer.Integer</span><span class='hs-num'>2</span></a><span class='hs-layout'>,</span><a class=annot href="#"><span class=annottext>GHC.Internal.Bignum.Integer.Integer</span><span class='hs-num'>3</span></a><span class='hs-keyglyph'>]</span> <span class='hs-varop'>!!</span> <a class=annot href="#"><span class=annottext>GHC.Internal.Types.Int</span><span class='hs-num'>2</span></a></pre>
+</body>
+</html>

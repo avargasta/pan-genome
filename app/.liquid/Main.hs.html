@@ -1,0 +1,39 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<title>app/Main.hs</title>
+</head>
+<head>
+<link type='text/css' rel='stylesheet' href='syntax.css' />
+</head>
+
+<body>
+<hr>
+Put mouse over identifiers to see inferred types
+<pre><span class=hs-linenum> 1: </span><a class=annot href="#"><span class=annottext>GHC.Internal.Types.Module</span><span class='hs-keyword'>module</span></a> <span class='hs-conid'>Main</span> <span class='hs-keyword'>where</span>
+<span class=hs-linenum> 2: </span>
+<span class=hs-linenum> 3: </span><span class='hs-keyword'>import</span> <span class='hs-keyword'>qualified</span> <span class='hs-conid'>Data.Vector.Unboxed</span> <span class='hs-keyword'>as</span> <span class='hs-conid'>U</span>
+<span class=hs-linenum> 4: </span><span class='hs-comment'>-- import FMIndex.FMIndex</span>
+<span class=hs-linenum> 5: </span>
+<span class=hs-linenum> 6: </span><span class='hs-definition'>main</span> <span class='hs-keyglyph'>::</span> <span class='hs-conid'>IO</span> <span class='hs-conid'>()</span>
+<span class=hs-linenum> 7: </span><a class=annot href="#"><span class=annottext>(GHC.Internal.Types.IO ())</span><span class='hs-definition'>main</span></a> <span class='hs-keyglyph'>=</span> <span class='hs-keyword'>do</span>
+<span class=hs-linenum> 8: </span>  <span class='hs-keyword'>let</span> <a class=annot href="#"><span class=annottext>(Data.Vector.Unboxed.Base.Vector GHC.Internal.Types.Char)</span><span class='hs-varid'>txt</span></a> <span class='hs-keyglyph'>=</span> <a class=annot href="#"><span class=annottext>(Data.Vector.Unboxed.Base.Vector GHC.Internal.Types.Char)</span><span class='hs-conid'>U.fromList</span></a> <a class=annot href="#"><span class=annottext>[GHC.Internal.Types.Char]</span><span class='hs-str'>"banana"</span></a>
+<span class=hs-linenum> 9: </span><span class='hs-comment'>--   let sa = buildSA txt</span>
+<span class=hs-linenum>10: </span><span class='hs-comment'>--   let bwt = buildBWT txt sa</span>
+<span class=hs-linenum>11: </span>
+<span class=hs-linenum>12: </span>  <a class=annot href="#"><span class=annottext>[GHC.Internal.Types.Char] -&gt; (GHC.Internal.Types.IO ())</span><span class='hs-varid'>putStrLn</span></a> <span class='hs-varop'>$</span> <a class=annot href="#"><span class=annottext>[GHC.Internal.Types.Char]</span><span class='hs-str'>"Text: "</span></a> <span class='hs-varop'>++</span> <a class=annot href="#"><span class=annottext>[GHC.Internal.Types.Char]</span><span class='hs-varid'>show</span></a> <a class=annot href="#"><span class=annottext>[GHC.Internal.Types.Char]</span><span class='hs-layout'>(</span></a><span class='hs-conid'>U.toList</span> <a class=annot href="#"><span class=annottext>{v : (Data.Vector.Unboxed.Base.Vector GHC.Internal.Types.Char) | v == txt##aPZ}</span><span class='hs-varid'>txt</span></a><span class='hs-layout'>)</span>
+<span class=hs-linenum>13: </span><span class='hs-comment'>--   putStrLn $ "Suffix Array: " ++ show (U.toList sa)</span>
+<span class=hs-linenum>14: </span><span class='hs-comment'>--   putStrLn $ "BWT: " ++ show (U.toList bwt)</span>
+<span class=hs-linenum>15: </span>  
+<span class=hs-linenum>16: </span><span class='hs-comment'>{-
+main = do
+  text &lt;- loadGenome
+  let biFM = buildBiFM text
+  let graph = buildGraph biFM 25
+  let scheme = generateScheme 2
+  let matches = approxMatch biFM scheme 2 pattern
+  print matches
+
+-}</span></pre>
+</body>
+</html>

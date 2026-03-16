@@ -1,16 +1,27 @@
+-- | Functions for computing the Burrows-Wheeler Transform (BWT)
 module FMIndex.BWT
-  ( BWT
-  , CTable
+  ( rotate
+  , rotations
   , buildBWT
-  , buildCTable
   ) where
 
+import FMIndex.Types
+import Data.List (sort)
 
-type BWT = U.Vector Char
-type CTable = Map Char Int
+-- | Rotate a list left by one position
+{-@ rotate :: {v:[Char] | len v > 0} -> {v:[Char] | len v > 0} @-}
+rotate :: [Char] -> [Char]
+rotate (y:ys) = ys ++ [y]
 
+-- | Compute all rotations of a list
+{-@ rotations :: {xs:[Char] | len xs > 0} -> [{v:[Char] | len v > 0}] @-}
+rotations :: [Char] -> [[Char]]
+rotations xs = take (length xs) (iterate rotate xs)
 
-buildBWT :: U.Vector Char -> SA -> BWT
-buildCTable :: BWT -> CTable
-buildBWT = undefined
-buildCTable = undefined
+-- | Compute the Burrows-Wheeler Transform of a string
+{-@ buildBWT :: {s:[Char] | len s > 0} -> [Char] @-}
+buildBWT :: [Char] -> [Char]
+buildBWT s = map last sortedRotations
+  where
+    rotationsList   = rotations s
+    sortedRotations = sort rotationsList

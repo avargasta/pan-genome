@@ -12,8 +12,10 @@ common warnings
 
 library
   exposed-modules:
-       FindIDRight  
-     , FMIndex.FMIndex
+       FMIndex.BWT
+     , FMIndex.Search
+     , FMIndex.Tables
+     , FMIndex.Types
   hs-source-dirs:
       src
   ghc-options:

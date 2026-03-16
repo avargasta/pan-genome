@@ -1,15 +1,12 @@
 module Main where
 
-import qualified Data.Vector.Unboxed as U
--- import FMIndex.FMIndex
-
 main :: IO ()
 main = do
-  let txt = U.fromList "banana"
+  let txt = "banana"
 --   let sa = buildSA txt
 --   let bwt = buildBWT txt sa
 
-  putStrLn $ "Text: " ++ show (U.toList txt)
+  putStrLn $ "Text: " ++ show txt
 --   putStrLn $ "Suffix Array: " ++ show (U.toList sa)
 --   putStrLn $ "BWT: " ++ show (U.toList bwt)
   

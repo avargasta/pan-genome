@@ -9,7 +9,7 @@ import FMIndex.Types
 import Data.List (sort)
 
 -- | Rotate a list left by one position
-{-@ rotate :: {v:[Char] | len v > 0} -> {v:[Char] | len v > 0} @-}
+{-@ rotate :: xs:{[Char] | len xs > 0} -> {v:[Char] | len v == len xs} @-}
 rotate :: [Char] -> [Char]
 rotate (y:ys) = ys ++ [y]
 

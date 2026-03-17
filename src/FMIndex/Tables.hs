@@ -41,7 +41,7 @@ cLookup c table = case lookup c table of
 -- | Lookup occurrence count in occ table; return 0 if not found
 {-@ occLookup :: c:Char 
               -> i:{v:Int | v >= 0} 
-              -> table:[(Char,[Int])] 
+              -> table:[(Char,{v:[Int] | len v > i})] 
               -> Int @-}
 occLookup :: Char -> Int -> [(Char,[Int])] -> Int
 occLookup c i table =

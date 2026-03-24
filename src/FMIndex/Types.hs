@@ -9,7 +9,7 @@ data FMIndex = FMIndex
   }
 
 {-@ data FMIndex = FMIndex 
-   { bwt  :: {v:[Char] | 2 <= len v }            
+   { bwt  :: {v:[Char] | 1 <= len v }            
    , ctab :: [(Char, Int)]    
    , occ  :: [(Char, {xs:[Int] | len bwt == len xs })]  
    } @-}

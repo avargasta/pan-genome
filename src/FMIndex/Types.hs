@@ -1,3 +1,5 @@
+{-@ LIQUID "--reflection" @-}
+
 -- | Core type definitions for FM-Index
 module FMIndex.Types where
 
@@ -10,6 +12,6 @@ data FMIndex = FMIndex
 
 {-@ data FMIndex = FMIndex 
    { bwt  :: {v:[Char] | 1 <= len v }            
-   , ctab :: [(Char, Int)]    
-   , occ  :: [(Char, {xs:[Int] | len bwt == len xs })]  
+   , ctab :: [(Char, {v:Nat | v <= len bwt })]    
+   , occ  :: [(Char, {xs:[Nat] | len bwt + 1 == len xs })]  
    } @-}

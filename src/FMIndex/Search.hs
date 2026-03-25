@@ -19,7 +19,7 @@ backwardSearch pattern fidx@(FMIndex l cTab occTab inv) = go occTab (reverse pat
 
     -- Recursive helper function
     n = length l
-    {-@ go :: [(Char,{v: SortedList Nat | len v == len l + 1})] 
+    {- go :: [(Char,{v: SortedList Nat | len v == len l + 1})] 
            -> [Char] 
            -> lo:{Int | 0 <= lo  } 
            -> hi:{Int | lo <= hi && hi <= len l } 
@@ -61,12 +61,3 @@ incrOccTab :: Char -> Int -> Int -> [(Char, [Int])] -> ()
 incrOccTab c i j table = case lookup c table of
     Just xs -> incrLookUpSorted xs i j
     Nothing -> ()
-
-
-
-{-@ theorem :: fmidx : FMIndex 
-            -> c:Char 
-            -> i:Nat
-            -> {cLookup c (ctab fmidx) + occLookup c i (occ fmidx) <= len (bwt fmidx) }  @-}
-theorem :: FMIndex -> Char -> Int -> ()
-theorem _ _ _ = undefined 

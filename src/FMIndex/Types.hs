@@ -18,7 +18,7 @@ data FMIndex = FMIndex
    { bwt  :: {v:[Char] | 1 <= len v }            
    , ctab :: [(Char, {v:Nat | v <= len bwt })]    
    , occ  :: [(Char, {xs:SortedList Nat | len bwt + 1 == len xs })] 
-   , inv  :: c:Char -> i:Nat -> {v:() | cLookup c ctab + occLookup c i occ  <= len bwt} 
+   , inv  :: c:Char -> i:{Nat | i <= len bwt} -> {v:() | cLookup c ctab + occLookup c i occ  <= len bwt} 
    } @-}
 
 

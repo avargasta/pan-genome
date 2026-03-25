@@ -3,15 +3,13 @@
 {-@ infix :               @-}
 module Data.RList where
 
-import Language.Haskell.Liquid.ProofCombinators
-
 {-@ type SortedList a = [a]<{\i j -> i <= j}>  @-} -- Expressing sortedness using abstract refinements  
 
 
 {-@ reflect index @-}
 {-@ index :: xs:[a] -> {v:Int | 0 <= v && v < len xs} -> a @-}
 index :: [a] -> Int -> a
-index (x:_) 0 = x
+index (x:_) 0  = x
 index (_:xs) n = index xs (n-1)
 
 {-@ lookupSorted :: x:a -> xs:SortedList {y:a | x <= y} -> i:{Nat | i < len xs + 1} 

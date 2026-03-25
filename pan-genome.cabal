@@ -13,6 +13,7 @@ common warnings
 library
   exposed-modules:
        Data.RList
+     , Data.ProofCombinators
      , FMIndex.BWT
      , FMIndex.Search
      , FMIndex.Tables

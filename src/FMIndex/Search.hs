@@ -1,4 +1,3 @@
-{-@ LIQUID "--no-termination" @-}
 {-@ LIQUID "--reflection"     @-}
 {-@ LIQUID "--ple"            @-}
 
@@ -10,6 +9,7 @@ module FMIndex.Search
 import Data.RList
 import FMIndex.Types
 import FMIndex.Tables (cLookup, occLookup)
+import Data.ProofCombinators
 
 -- | Perform backward search of a pattern in FM-Index
 -- Returns a range (sp, ep) in the BWT where the pattern occurs
@@ -19,7 +19,7 @@ backwardSearch pattern fidx@(FMIndex l cTab occTab inv) = go occTab (reverse pat
 
     -- Recursive helper function
     n = length l
-    {- go :: [(Char,{v: SortedList Nat | len v == len l + 1})] 
+    {-@ go :: {v:[(Char,{v: SortedList Nat | len v == len l + 1})] | v == occ fidx} 
            -> [Char] 
            -> lo:{Int | 0 <= lo  } 
            -> hi:{Int | lo <= hi && hi <= len l } 
@@ -31,25 +31,10 @@ backwardSearch pattern fidx@(FMIndex l cTab occTab inv) = go occTab (reverse pat
       | otherwise =
           let lo' = cLookup c cTab + occLookup c lo occTab {- <= than the number of times c appears -}
               hi' = cLookup c cTab + occLookup c hi occTab
-          in go occTab cs lo' (hi' `const` inv c hi  
-                                   `const` incrOccTab c lo hi occTab
-                                   `const` assume (occ fidx == occTab) ()
-                                   `const` assert (occLookup c lo (occ fidx) == occLookup c lo occTab) ()
-                                   `const` assert (occLookup c lo occTab <= occLookup c hi occTab) () 
-                                   `const` assert (lo' <= hi') () 
-                                   `const` assert (hi' <= n) ()
-                                   )
+          in go occTab cs lo' (hi' ? inv c hi  
+                                   ? incrOccTab c lo hi occTab)
 
 
-
-{-@ assert :: b:{Bool | b} -> a -> {x:a | b} @-}
-assert :: Bool -> a -> a
-assert _ x = x
-
-
-{-@ assume assume :: b:Bool -> a -> {x:a | b} @-}
-assume :: Bool -> a -> a
-assume _ x = x
 
 
 {-@ incrOccTab :: c:Char 

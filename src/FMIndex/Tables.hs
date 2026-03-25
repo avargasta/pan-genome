@@ -9,6 +9,7 @@ module FMIndex.Tables
   ) where
 
 import Data.List (sort, nub)
+import Data.RList 
 import FMIndex.BWT (buildBWT)
 
 -- | Wrapper so that LH knows the length of [0..n]
@@ -58,6 +59,6 @@ cLookup c table = case lookup c table of
 occLookup :: Char -> Int -> [(Char,[Int])] -> Int
 occLookup c i table =
   case lookup c table of
-    Just xs -> xs !! i
+    Just xs -> xs `index` i
     Nothing -> 0
   

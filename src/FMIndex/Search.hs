@@ -1,23 +1,25 @@
 {-@ LIQUID "--no-termination" @-}
 {-@ LIQUID "--reflection"     @-}
+{-@ LIQUID "--ple"            @-}
 
 -- | Exact backward search using FM-Index
 module FMIndex.Search
   ( backwardSearch
   ) where
 
+import Data.RList
 import FMIndex.Types
 import FMIndex.Tables (cLookup, occLookup)
 
 -- | Perform backward search of a pattern in FM-Index
 -- Returns a range (sp, ep) in the BWT where the pattern occurs
 backwardSearch :: String -> FMIndex -> (Int, Int)
-backwardSearch pattern fidx@(FMIndex l cTab occTab) = go occTab (reverse pattern) 0 (n-1)
+backwardSearch pattern fidx@(FMIndex l cTab occTab inv) = go occTab (reverse pattern) 0 (n-1)
   where
 
     -- Recursive helper function
     n = length l
-    {-@ go :: [(Char,{v:[Nat] | len v == len l + 1})] 
+    {-@ go :: [(Char,{v: SortedList Nat | len v == len l + 1})] 
            -> [Char] 
            -> lo:{Int | 0 <= lo  } 
            -> hi:{Int | lo <= hi && hi <= len l } 
@@ -29,11 +31,13 @@ backwardSearch pattern fidx@(FMIndex l cTab occTab) = go occTab (reverse pattern
       | otherwise =
           let lo' = cLookup c cTab + occLookup c lo occTab {- <= than the number of times c appears -}
               hi' = cLookup c cTab + occLookup c hi occTab
-          in go occTab cs lo' (hi' `const` theorem fidx c hi  
-                                   `const` incrOccTab fidx c lo hi
-                                   `const` assume (occLookup c lo occTab <= occLookup c hi occTab) () 
+          in go occTab cs lo' (hi' `const` inv c hi  
+                                   `const` incrOccTab c lo hi occTab
+                                   `const` assume (occ fidx == occTab) ()
+                                   `const` assert (occLookup c lo (occ fidx) == occLookup c lo occTab) ()
+                                   `const` assert (occLookup c lo occTab <= occLookup c hi occTab) () 
                                    `const` assert (lo' <= hi') () 
-                                   `const` assume (hi' <= n) ()
+                                   `const` assert (hi' <= n) ()
                                    )
 
 
@@ -48,13 +52,15 @@ assume :: Bool -> a -> a
 assume _ x = x
 
 
-{-@ incrOccTab :: fmidx : FMIndex 
-               -> c:Char 
+{-@ incrOccTab :: c:Char 
                -> i:Nat
                -> j:{Nat | i <= j}
-              -> { occLookup c i (occ fmidx) <= occLookup c j (occ fmidx) }  @-}
-incrOccTab :: FMIndex -> Char -> Int -> Int -> ()
-incrOccTab _ _ _ _ = undefined
+               -> table:[(Char, {v: SortedList Nat | j < len v})] 
+               -> { occLookup c i table <= occLookup c j table }  @-}
+incrOccTab :: Char -> Int -> Int -> [(Char, [Int])] -> ()
+incrOccTab c i j table = case lookup c table of
+    Just xs -> incrLookUpSorted xs i j
+    Nothing -> ()
 
 
 

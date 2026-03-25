@@ -5,7 +5,6 @@ module FMIndex.BWT
   , buildBWT
   ) where
 
-import FMIndex.Types
 import Data.List (sort)
 
 -- | Rotate a list left by one position

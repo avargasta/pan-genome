@@ -12,7 +12,8 @@ common warnings
 
 library
   exposed-modules:
-       FMIndex.BWT
+       Data.RList
+     , FMIndex.BWT
      , FMIndex.Search
      , FMIndex.Tables
      , FMIndex.Types

@@ -18,6 +18,8 @@ library
      , FMIndex.Search
      , FMIndex.Tables
      , FMIndex.Types
+     , FMIndex.FMIndex
+     , BiIndex.Types
   hs-source-dirs:
       src
   ghc-options:

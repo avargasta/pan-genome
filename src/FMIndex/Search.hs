@@ -19,7 +19,7 @@ backwardSearch pattern fidx@(FMIndex l cTab occTab inv) = go occTab (reverse pat
 
     -- Recursive helper function
     n = length l
-    {-@ go :: {v:[(Char,{v: SortedList Nat | len v == len l + 1})] | v == occ fidx} 
+    {-@ go :: {v:[(Char,{v: SortedList Nat | len v == len l + 1})] | v == occtab fidx} 
            -> [Char] 
            -> lo:{Int | 0 <= lo  } 
            -> hi:{Int | lo <= hi && hi <= len l } 
@@ -33,9 +33,6 @@ backwardSearch pattern fidx@(FMIndex l cTab occTab inv) = go occTab (reverse pat
               hi' = cLookup c cTab + occLookup c hi occTab
           in go occTab cs lo' (hi' ? inv c hi  
                                    ? incrOccTab c lo hi occTab)
-
-
-
 
 {-@ incrOccTab :: c:Char 
                -> i:Nat

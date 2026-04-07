@@ -13,7 +13,17 @@ index (_:xs) n = index xs (n-1)
 
 
 
+{-@ sort :: Ord a => xs:[a] -> {v:SortedList a | len v == len xs} @-}
+sort :: Ord a => [a] -> [a]
+sort []     = []
+sort (x:xs) = insert x (sort xs)
 
+{-@ insert :: Ord a => x:a -> xs:SortedList a -> {v:SortedList a | len v == len xs + 1} @-}
+insert :: Ord a => a -> [a] -> [a]
+insert x [] = [x]
+insert x (y:ys)
+  | x <= y    = x : y : ys
+  | otherwise = y : insert x ys
 
 {-@ lookupSorted :: x:a -> xs:SortedList {y:a | x <= y} -> i:{Nat | i < len xs + 1} 
                  -> { x <= index (x:xs) i } @-} -- Ensures that if x is less than or equal to the head of the list, then it is less than or equal to the element at index i in the list

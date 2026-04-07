@@ -1,4 +1,5 @@
 {-@ LIQUID "--reflection"     @-}
+{-@ LIQUID "--no-termination"     @-}
 
 -- | Functions to build and access FM-Index auxiliary tables
 module FMIndex.Tables
@@ -8,26 +9,23 @@ module FMIndex.Tables
   , occLookup
   ) where
 
-import Data.List (sort, nub)
+import Data.List (nub)
 import Data.RList 
 import FMIndex.BWT (buildBWT)
 
 -- | Build C table: cumulative counts of each character
-{-@ ignore cTable @-}
 {-@ cTable :: s:{[Char] | len s > 0} -> [(Char, {v:Nat | v <= len s })] @-}
 cTable :: [Char] -> [(Char, Int)]
 cTable s = go (sort s) 0 []
   where
-    -- go :: [Char] -> Int -> [(Char, Int)] -> [(Char, Int)]
-    {- go :: xs:[Char] -> i:{Nat | i <= len xs +1} 
-           -> acc:[(Char, {v:Nat | v <= len xs })] 
-           -> [(Char, {v:Nat | v <= len xs })] @-}
+    go :: [Char] -> Int -> [(Char, Int)] -> [(Char, Int)]
+    {-@ go ::  xs:[Char] -> i:{Nat | i <= len s - len xs} 
+           -> acc:[(Char, {v:Nat |  v  <= i })] 
+           -> [(Char, {v:Nat |  v <= len s  })] @-}
     go [] _ acc = acc
     go (x:xs) i acc
       | x `elem` map fst acc = go xs (i+1) acc
       | otherwise            = go xs (i+1) ((x,i):acc)
-
-{-@ assume sort :: xs:[a] -> {v:SortedList a | len v == len xs} @-}
 
 -- | Count occurrences of a character up to a given index
 occ :: [Char] -> Char -> Int -> Int

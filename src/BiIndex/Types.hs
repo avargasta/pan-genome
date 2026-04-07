@@ -6,27 +6,15 @@ module BiIndex.Types where
 import FMIndex.Tables (cTable, occTable, cLookup, occLookup)
 import FMIndex.BWT    (buildBWT)
 import FMIndex.FMIndex (FMIndex', mkFMIndex)
-import FMIndex.Types (FMIndex)
-
-
--- data BiIndex = BiIndex
---   { fwd :: FMIndex'
---   , bwd :: FMIndex'
---   }
-
--- buildBiIndex :: [Char] -> BiIndex
--- buildBiIndex t = BiIndex
---   { fwd = buildFMIndex' t
---   , bwd = buildFMIndex' (reverse t)
---   }
+import FMIndex.Types 
 
 data BiIndex = BiIndex
   { fwd :: FMIndex
   , bwd :: FMIndex
   }
 
--- buildBiIndex :: [Char] -> BiIndex
--- buildBiIndex t = BiIndex
---   { fwd = buildFMIndex t
---   , bwd = buildFMIndex (reverse t)
---   }
+buildBiIndex :: [Char] -> BiIndex
+buildBiIndex t = BiIndex
+  { fwd = buildFMIndex t
+  , bwd = buildFMIndex (reverse t)
+  }

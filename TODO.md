@@ -1,3 +1,5 @@
+- [ ] verify assumptions in Tables 
+
 
 - Definition of the FMIndex structure and operations on it
 

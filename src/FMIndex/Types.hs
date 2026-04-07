@@ -23,19 +23,10 @@ data FMIndex = FMIndex
    } @-}
 
 
--- buildFMIndex :: [Char] -> FMIndex
--- buildFMIndex t =
---   let
---     bwt   = buildBWT t
---     ctab   = cTable t
---     occtab = occTable t
+buildFMIndex :: [Char] -> FMIndex
+buildFMIndex t = FMIndex bwt ctab occtab undefined
+  where
+    bwt    = buildBWT t
+    ctab   = cTable bwt
+    occtab = occTable bwt
 
---     invFun :: Char -> Int -> ()
---     invFun _ _ = ()
---   in
---     FMIndex
---       { bwt    = bwt
---       , ctab   = ctab
---       , occtab = occtab
---       , inv    = invFun
---       }

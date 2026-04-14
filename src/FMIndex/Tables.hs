@@ -1,5 +1,4 @@
 {-@ LIQUID "--reflection"     @-}
-{-@ LIQUID "--no-termination"     @-}
 
 -- | Functions to build and access FM-Index auxiliary tables
 module FMIndex.Tables

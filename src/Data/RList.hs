@@ -12,6 +12,22 @@ index (x:_) 0  = x
 index (_:xs) n = index xs (n-1)
 
 
+{-@ iterateN :: (a -> a) -> n:Nat -> a -> {v:[a] | len v == n} @-}
+iterateN :: (a -> a) -> Int -> a -> [a]
+iterateN f 0 x = []
+iterateN f n x = x : iterateN f (n-1) (f x)
+
+
+{-@ elemIndexNat :: Eq a => a -> xs:[a] -> Maybe {v:Nat | v < len xs} @-}
+elemIndexNat :: Eq a => a -> [a] -> Maybe Int
+elemIndexNat x [] = Nothing
+elemIndexNat x (y:ys)
+    | x == y    = Just 0
+    | otherwise = case elemIndexNat x ys of
+                    Just n  -> Just (n + 1)
+                    Nothing -> Nothing 
+
+
 
 {-@ sort :: Ord a => xs:[a] -> {v:SortedList a | len v == len xs} @-}
 sort :: Ord a => [a] -> [a]

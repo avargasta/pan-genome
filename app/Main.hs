@@ -3,7 +3,7 @@
 module Main where
 
 import FMIndex.BWT ( buildBWT, buildSA )
-import FMIndex.Types ( FMIndex(FMIndex) )
+import FMIndex.Types ( FMIndex(..) )
 import FMIndex.Tables ( cTable, occTable )      
 import FMIndex.Search ( backwardSearch, bwtRangeToOriginal )
 
@@ -27,6 +27,6 @@ main = do
   let (lo, hi) = backwardSearch pattern fidx
   putStrLn $ "Pattern: " ++ show pattern
   putStrLn $ "Occurrences in BWT range: [" ++ show lo ++ ", " ++ show hi ++ "]"
-  let loNat = max 0 lo
-  let hiNat = max 0 hi
-  putStrLn $ "Original positions of pattern occurrences: " ++ show (bwtRangeToOriginal fidx loNat hiNat)
+  putStrLn $ if lo < hi && hi <= length (sa fidx)
+                then "Original positions of pattern occurrences: " ++ show (bwtRangeToOriginal fidx lo hi)
+                else ("The index range is invalid: lo = " ++ show lo ++ ", hi = " ++ show hi ++ ", sa length = " ++ show (length (sa fidx)))

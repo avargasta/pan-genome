@@ -3,9 +3,11 @@ module FMIndex.BWT
   ( rotate
   , rotations
   , buildBWT
+  , buildSA
   ) where
 
-import Data.List (sort)
+import Data.List (sort, elemIndex)
+import Data.Maybe (fromMaybe)
 
 -- | Rotate a list left by one position
 {-@ rotate :: xs:{v:[Char] | len v > 0} -> {r:[Char] | len r == len xs} @-}
@@ -34,6 +36,24 @@ sortPreservesLen = sort
 buildBWT :: [Char] -> [Char]
 buildBWT s = map last sortedRotations
   where
-    s'              = '$' : s
+    s'              = s ++ "$"
     rotationsList   = rotations s'
     sortedRotations = sortPreservesLen rotationsList
+
+
+
+-- | elemIndex returns a valid non-negative position when present
+{-@ assume elemIndexNat :: Eq a => x:a -> xs:[a] -> Maybe Nat @-}
+elemIndexNat :: Eq a => a -> [a] -> Maybe Int
+elemIndexNat = elemIndex
+
+-- | Build suffix array from sorted rotations
+-- Returns indices of original suffixes in sorted order
+{-@ buildSA :: s:[Char] -> {v:[Nat] | len v == len s + 1} @-}
+buildSA :: [Char] -> [Int]
+buildSA s = map rotationIndex sortedRotations
+  where
+    s'              = s ++ "$"
+    rotationsList   = rotations s'
+    sortedRotations = sortPreservesLen rotationsList
+    rotationIndex r = fromMaybe 0 (elemIndexNat r rotationsList)

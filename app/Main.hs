@@ -2,10 +2,10 @@
 
 module Main where
 
-import FMIndex.BWT ( buildBWT )
+import FMIndex.BWT ( buildBWT, buildSA )
 import FMIndex.Types ( FMIndex(FMIndex) )
 import FMIndex.Tables ( cTable, occTable )      
-import FMIndex.Search ( backwardSearch )
+import FMIndex.Search ( backwardSearch, bwtRangeToOriginal )
 
 main :: IO ()
 main = do
@@ -13,13 +13,20 @@ main = do
   let bwt = buildBWT txt
   let cTab = cTable bwt
   let occTab = occTable bwt
-  let fidx = FMIndex bwt cTab occTab undefined 
+  let suffix_array = buildSA txt
+  putStrLn $ "Suffix Array: " ++ show suffix_array
+  let fidx = FMIndex bwt cTab occTab suffix_array undefined
+  let n = length bwt
 
   putStrLn $ "Text: " ++ show txt
   putStrLn $ "BWT: " ++ show bwt
   putStrLn $ "C Table: " ++ show cTab
   putStrLn $ "Occ Table: " ++ show occTab
-  let pattern = "ana"
+  putStrLn $ "FM-Index built with BWT length: " ++ show n
+  let pattern = "a"
   let (lo, hi) = backwardSearch pattern fidx
   putStrLn $ "Pattern: " ++ show pattern
   putStrLn $ "Occurrences in BWT range: [" ++ show lo ++ ", " ++ show hi ++ "]"
+  let loNat = max 0 lo
+  let hiNat = max 0 hi
+  putStrLn $ "Original positions of pattern occurrences: " ++ show (bwtRangeToOriginal fidx loNat hiNat)

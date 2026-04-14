@@ -56,4 +56,3 @@ bwtRangeToOriginal fidx lo hi = go (hi - lo)
       go i | i == 0   = []
            | i == 1   = [sa fidx !! (hi - 1)]
            | otherwise = sa fidx !! (hi - i) : go (i - 1)
---   [sa fidx !! i | i <- [lo .. hi - 1], i >= 0 && i < length (sa fidx)]

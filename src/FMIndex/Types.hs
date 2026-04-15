@@ -10,7 +10,7 @@ import FMIndex.Tables (cLookup, occLookup)
 data FMIndex = FMIndex
   { bwt  :: [Char]              -- ^ Burrows-Wheeler Transform of the text
   , ctab :: [(Char, Int)]       -- ^ C table: cumulative character counts
-  , occtab  :: [(Char, [Int])]     -- ^ Occurrence table: counts of characters up to each position
+  , occtab  :: [(Char, [Int])]  -- ^ Occurrence table: counts of characters up to each position
   , sa   :: [Int]               -- ^ Suffix Array: indices of sorted suffixes
   , inv  :: Char -> Int -> ()   -- ^ Invariant: ensures consistency of tables with BWT
   }

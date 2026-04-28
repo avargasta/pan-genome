@@ -1,4 +1,9 @@
-- [ ] verify assumptions in Tables 
+- [ ] Make repo for thesis
+- [ ] Read: https://dl.acm.org/doi/epdf/10.1145/3158141
+- [ ] Read: https://dl.acm.org/doi/pdf/10.1145/3703595.3705883
+- [ ] Read: https://link.springer.com/article/10.1007/s10817-025-09735-8
+
+
 
 
 - Definition of the FMIndex structure and operations on it

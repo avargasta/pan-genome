@@ -22,3 +22,10 @@ data FMIndex = FMIndex
    , sa   :: [Nat]
    , inv  :: c:Char -> i:{Nat | i <= len bwt} -> {v:() | cLookup c ctab + occLookup c i occtab  <= len bwt} 
    } @-}
+
+instance Show FMIndex where
+  show fidx = "FMIndex { bwt = " ++ show (bwt fidx)
+           ++ ", ctab = " ++ show (ctab fidx)
+           ++ ", occtab = " ++ show (occtab fidx)
+           ++ ", sa = " ++ show (sa fidx)
+           ++ " }"

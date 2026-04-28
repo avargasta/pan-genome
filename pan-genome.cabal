@@ -20,6 +20,9 @@ library
      , FMIndex.Types
      , FMIndex.FMIndex
      , BiIndex.Types
+      , BiIndex.BiIndex
+      , BiIndex.BiForwardSearch
+      , BiIndex.BiBackwardSearch
   hs-source-dirs:
       src
   ghc-options:

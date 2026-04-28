@@ -14,22 +14,22 @@ import Data.ProofCombinators
 
 -- | Perform backward search of a pattern in FM-Index
 -- Returns a range (sp, ep) in the BWT where the pattern occurs
-{-@ backwardSearch :: String -> FMIndex -> (Nat, Nat) @-}
-backwardSearch :: String -> FMIndex -> (Int, Int)
-backwardSearch pattern fidx@(FMIndex l cTab occTab sa inv) = go occTab (reverse pattern) 0 n
+{-@ backwardSearch :: p:String -> fidx:FMIndex -> {v:(Nat, Nat) | fst v <= snd v && snd v <= len (bwt fidx) } -> {v:(Nat, Nat) | fst v <= snd v} @-}
+backwardSearch :: String -> FMIndex -> (Int, Int) -> (Int, Int)
+backwardSearch pattern fidx@(FMIndex l cTab occTab sa inv) (lo, hi) = go occTab (reverse pattern) lo hi
   where
 
     -- Recursive helper function
     n = length l
     {-@ go :: {v:[(Char,{v:SortedList Nat | len v == len l + 1})] | v == occtab fidx} 
            -> [Char] 
-           -> lo:{Nat | 0 <= lo  } 
-           -> hi:{Nat | lo <= hi && hi <= len l } 
-           -> (Nat, Nat) @-}
+           -> lo:Nat
+           -> hi:{Nat | hi <= len l && lo <= hi } 
+           -> {v:(Nat, Nat) | fst v <= snd v} @-}
     go :: [(Char, [Int])] -> [Char] -> Int -> Int -> (Int, Int)
     go occTab [] lo hi = (lo, hi)  -- Base case: no more characters left
     go occTab (c:cs) lo hi
-      | lo > hi  = (1,0)  -- No match
+      | lo > hi  = (0,0)  -- No match
       | otherwise =
           let lo' = cLookup c cTab + occLookup c lo occTab {- <= than the number of times c appears -}
               hi' = cLookup c cTab + occLookup c hi occTab

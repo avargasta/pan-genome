@@ -2,18 +2,37 @@
 
 module BiIndex.Types where
 
-import FMIndex.Tables (cTable, occTable, cLookup, occLookup)
-import FMIndex.BWT    (buildBWT)
-import FMIndex.Types ( FMIndex )
-import FMIndex.FMIndex ( buildFMIndex )
+import FMIndex.Types ( FMIndex, bwt )
 
 data BiIndex = BiIndex
   { fwd :: FMIndex
   , bwd :: FMIndex
   }
 
-buildBiIndex :: [Char] -> BiIndex
-buildBiIndex t = BiIndex
-  { fwd = buildFMIndex t
-  , bwd = buildFMIndex (reverse t)
+{-@ data BiIndex = BiIndex
+      { fwd :: FMIndex
+      , bwd :: FMIndex
+      } @-}
+
+data BiRange = BiRange
+  { fwdRange :: (Int, Int)
+  , bwdRange :: (Int, Int)
+  , pattern  :: String
   }
+
+{-@ data BiRange = BiRange
+  { fwdRange :: (Nat, Nat)
+  , bwdRange :: (Nat, Nat)
+  , pattern  :: [Char]
+  } @-}
+
+instance Show BiIndex where
+  show bi = "BiIndex { fwd = " ++ show (fwd bi)
+           ++ ", bwd = " ++ show (bwd bi)
+           ++ " }"
+
+instance Show BiRange where
+  show r = "BiRange { fwdRange = " ++ show (fwdRange r)
+           ++ ", bwdRange = " ++ show (bwdRange r)
+           ++ ", pattern = " ++ show (pattern r)
+           ++ " }" 

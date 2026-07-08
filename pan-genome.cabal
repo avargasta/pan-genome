@@ -23,6 +23,7 @@ library
       , BiIndex.BiIndex
       , BiIndex.BiForwardSearch
       , BiIndex.BiBackwardSearch
+      , Alignment.BidirectionalSearch
   hs-source-dirs:
       src
   ghc-options:

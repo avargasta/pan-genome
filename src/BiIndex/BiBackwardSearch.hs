@@ -18,17 +18,7 @@ offsetBackward bi symbol range = go (ctab (fwd bi))
       | otherwise  = go cs
 
 -- | Extend the current pattern with one symbol.
---   Updates bwdRange by running backward search on reverse pattern over fwd index.
-{-@ biBackwardSearch
-      :: bi:BiIndex
-      -> range:{r:BiRange
-      | fst (fwdRange r) <= snd (fwdRange r)
-      && snd (fwdRange r) <= len (bwt (fwd bi))
-      && fst (bwdRange r) <= snd (bwdRange r)
-      && snd (bwdRange r) <= len (bwt (bwd bi)) }
-      -> symbol:Char
-      -> BiRange
-  @-}
+{-@ biBackwardSearch :: bi:BiIndex -> range:{r:BiRange | fst (fwdRange r) <= snd (fwdRange r) && snd (fwdRange r) <= len (bwt (fwd bi)) && fst (bwdRange r) <= snd (bwdRange r) } -> symbol:Char -> {v:BiRange | fst (fwdRange v) <= snd (fwdRange v) && snd (fwdRange v) <= len (bwt (fwd bi)) && fst (bwdRange v) <= snd (bwdRange v) } @-}
 biBackwardSearch :: BiIndex -> BiRange -> Char -> BiRange
 biBackwardSearch bi range symbol =
   range
@@ -48,3 +38,17 @@ biBackwardSearch bi range symbol =
     nextBwdLo     = flo + offset
     nextBwdHi     = flo + offset + (nbHi - nbLo)
     nextBwdRange  = (nextBwdLo, nextBwdHi)
+
+-- | Extend the current pattern with an exact string (right to left).
+{-@ biBackwardExtendExact :: bi:BiIndex
+      -> range:{r:BiRange | fst (fwdRange r) <= snd (fwdRange r) && snd (fwdRange r) <= len (bwt (fwd bi)) && fst (bwdRange r) <= snd (bwdRange r) }
+      -> s:String
+      -> {v:BiRange | fst (fwdRange v) <= snd (fwdRange v) && snd (fwdRange v) <= len (bwt (fwd bi)) && fst (bwdRange v) <= snd (bwdRange v) } @-}
+biBackwardExtendExact :: BiIndex -> BiRange -> String -> BiRange
+biBackwardExtendExact bi range s = go range (reverse s)
+  where
+    {-@ go :: acc:{r:BiRange | fst (fwdRange r) <= snd (fwdRange r) && snd (fwdRange r) <= len (bwt (fwd bi)) && fst (bwdRange r) <= snd (bwdRange r) }
+           -> t:String
+           -> {v:BiRange | fst (fwdRange v) <= snd (fwdRange v) && snd (fwdRange v) <= len (bwt (fwd bi)) && fst (bwdRange v) <= snd (bwdRange v) } @-}
+    go acc [] = acc
+    go acc (c:cs) = go (biBackwardSearch bi acc c) cs

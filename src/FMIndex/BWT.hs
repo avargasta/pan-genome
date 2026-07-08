@@ -10,13 +10,13 @@ import Data.Maybe (fromMaybe)
 import Data.RList (sort, iterateN, elemIndexNat)
 
 -- | Rotate a list left by one position
-{-@ rotate :: xs:{v:[Char] | len v > 0} -> {r:[Char] | len r == len xs} @-}
+{-@ rotate :: xs:{v:[Char] | True} -> {r:[Char] | len r == len xs} @-}
 rotate :: [Char] -> [Char]
 rotate []     = []
 rotate (x:xs) = xs ++ [x]
 
 -- | Compute all rotations of a list
-{-@ rotations :: xs:{v:[Char] | len v > 0}
+{-@ rotations :: xs:{v:[Char] | True}
               -> {rs:[{v:[Char] | len v == len xs}] | len rs == len xs} @-}
 rotations :: [Char] -> [[Char]]
 rotations xs = iterateN rotate (length xs) xs

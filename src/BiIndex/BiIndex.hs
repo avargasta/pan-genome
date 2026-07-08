@@ -14,12 +14,13 @@ buildBiIndex t = BiIndex
   , bwd = buildFMIndex (reverse t)
   }
 
-{-@ initializeBiRange :: bi:BiIndex -> BiRange @-}
+{-@ initializeBiRange :: bi:BiIndex -> {r:BiRange | fst (fwdRange r) <= snd (fwdRange r) && snd (fwdRange r) <= len (bwt (fwd bi)) && fst (bwdRange r) <= snd (bwdRange r) && snd (bwdRange r) <= len (bwt (bwd bi)) } @-}
 initializeBiRange :: BiIndex -> BiRange
 initializeBiRange bi = BiRange
-  { fwdRange = (0, n)
-  , bwdRange = (0, n)
+  { fwdRange = (0, nFwd)
+  , bwdRange = (0, nBwd)
   , pattern  = ""
   }
   where
-    n = length (bwt (fwd bi))
+    nFwd = length (bwt (fwd bi))
+    nBwd = length (bwt (bwd bi))

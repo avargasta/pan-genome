@@ -13,7 +13,7 @@ import Data.RList
 import FMIndex.BWT (buildBWT)
 
 -- | Build C table: cumulative counts of each character
-{-@ cTable :: s:{[Char] | len s > 0} -> [(Char, {v:Nat | v <= len s})] @-}
+{-@ cTable :: s:[Char] -> [(Char, {v:Nat | v <= len s})] @-}
 cTable :: [Char] -> [(Char, Int)]
 cTable s = go (sort s) 0 []
   where
@@ -39,11 +39,11 @@ buildOccList l c = go 0 l
       | otherwise = n : go n xs
 
 -- | Build occurrence table: for each character, store counts up to each position
-{-@ occTable :: ss:{[Char] | len ss > 0} -> [(Char, {xs:SortedList Nat | len ss + 1 == len xs})] @-}
+{-@ occTable :: l:[Char] -> [(Char, {xs:SortedList Nat | len l + 1 == len xs})] @-}
 occTable :: [Char] -> [(Char,[Int])]
-occTable l = map (\c -> (c, buildOccList l c)) alphabet
+occTable l = map (\c -> (c, buildOccList l c)) (alphabet l)
   where
-    alphabet = nub l           -- unique characters in BWT
+    alphabet l = nub l -- nub returns the distinct characters in l
 
 -- | Lookup character in C table; return 0 if not found
 {-@ reflect cLookup @-}

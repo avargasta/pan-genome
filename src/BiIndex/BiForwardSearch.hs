@@ -1,3 +1,4 @@
+
 {-@ LIQUID "--reflection" @-}
 
 module BiIndex.BiForwardSearch where
@@ -18,17 +19,7 @@ offsetForward bi symbol range = go (ctab (bwd bi))
       | otherwise  = go cs
 
 -- | Extend the current pattern with one symbol.
---   Updates bwdRange by running backward search on reverse pattern over bwd index.
-{-@ biForwardSearch
-      :: bi:BiIndex
-      -> range:{r:BiRange
-      | fst (fwdRange r) <= snd (fwdRange r)
-      && snd (fwdRange r) <= len (bwt (fwd bi))
-      && fst (bwdRange r) <= snd (bwdRange r)
-      && snd (bwdRange r) <= len (bwt (bwd bi)) }
-      -> symbol:Char
-      -> BiRange
-  @-}
+{-@ biForwardSearch :: bi:BiIndex -> range:{r:BiRange | fst (fwdRange r) <= snd (fwdRange r) && fst (bwdRange r) <= snd (bwdRange r) && snd (bwdRange r) <= len (bwt (bwd bi)) } -> symbol:Char -> {v:BiRange | fst (fwdRange v) <= snd (fwdRange v) && fst (bwdRange v) <= snd (bwdRange v) && snd (bwdRange v) <= len (bwt (bwd bi)) } @-}
 biForwardSearch :: BiIndex -> BiRange -> Char -> BiRange
 biForwardSearch bi range symbol =
   range
@@ -48,3 +39,17 @@ biForwardSearch bi range symbol =
     nextFwdLo     = flo + offset
     nextFwdHi     = flo + offset + (nbHi - nbLo)
     nextFwdRange  = (nextFwdLo, nextFwdHi)
+
+-- | Extend the current pattern with an exact string (left to right).
+{-@ biForwardExtendExact :: bi:BiIndex
+      -> range:{r:BiRange | fst (fwdRange r) <= snd (fwdRange r) && fst (bwdRange r) <= snd (bwdRange r) && snd (bwdRange r) <= len (bwt (bwd bi)) }
+      -> s:String
+      -> {v:BiRange | fst (fwdRange v) <= snd (fwdRange v) && fst (bwdRange v) <= snd (bwdRange v) && snd (bwdRange v) <= len (bwt (bwd bi)) } @-}
+biForwardExtendExact :: BiIndex -> BiRange -> String -> BiRange
+biForwardExtendExact bi range s = go range s
+  where
+    {-@ go :: acc:{r:BiRange | fst (fwdRange r) <= snd (fwdRange r) && fst (bwdRange r) <= snd (bwdRange r) && snd (bwdRange r) <= len (bwt (bwd bi)) }
+           -> t:String
+           -> {v:BiRange | fst (fwdRange v) <= snd (fwdRange v) && fst (bwdRange v) <= snd (bwdRange v) && snd (bwdRange v) <= len (bwt (bwd bi)) } @-}
+    go acc [] = acc
+    go acc (c:cs) = go (biForwardSearch bi acc c) cs

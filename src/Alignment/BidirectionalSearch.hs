@@ -2,145 +2,103 @@
 
 module Alignment.BidirectionalSearch where
 
-import BiIndex.Types            (BiIndex(..), BiRange(..))
-import BiIndex.BiIndex          (initializeBiRange)
-import BiIndex.BiBackwardSearch (biBackwardSearch, biBackwardExtendExact)
-import BiIndex.BiForwardSearch  (biForwardSearch, biForwardExtendExact)
-import FMIndex.Types            (ctab, bwt)
+import BiFMIndex.Types (BiFMIndex(..), BiRange(..), BiState(..))
+import BiFMIndex.BiBackwardSearch (biBackwardSearch)
+import FMIndex.Types (ctab)
+
+-- Me gustaría tener:
+-- Extend prefix ranges from the last character of String down to the first character, filtering empty ranges.
+-- prefixExtension :: [(BiState, Int)] -> String -> [(BiState, Int)]
+
+-- Extend by one mismatch character
+-- prefixMismatch :: [(BiState, Int)] -> String -> [(BiState, Int)]
+
+
+-- La idea es que el Int sea la posición del pattern en el que efectivamente estoy o he hecho el mismatch.
+-- La String es la subcadena de pattern que en cada caso estaré byscando.
 
 -- ---------------------------------------------------------------------------
 -- Helpers
 -- ---------------------------------------------------------------------------
 
--- | All characters in the index alphabet that differ from the given character.
---   These are the candidate substitutions at a mismatch position.
-enumerateMismatches :: BiIndex -> Char -> [Char]
-enumerateMismatches bi c = filter (\x -> x /= c && x /= '$') (map fst (ctab (fwd bi)))
+-- | A range is empty when its lower bound is not strictly below its upper
+--   bound (no occurrences left).
+isEmptyRange :: BiRange -> Bool
+isEmptyRange r = rangeWidth r <= 0
 
--- | Backward-search over p[start..end] (inclusive) extending from an initial range.
-{-@ biBackwardSearchSegment :: bi:BiIndex
-                         -> p:[Char]
-       -> start:{v:Nat | v < len p}
-       -> end:{v:Nat | start <= v && v < len p}
-                         -> range:{r:BiRange | fst (fwdRange r) <= snd (fwdRange r)
-                                                 && snd (fwdRange r) <= len (bwt (fwd bi))
-                                                 && fst (bwdRange r) <= snd (bwdRange r)}
-                         -> BiRange @-}
-biBackwardSearchSegment :: BiIndex -> [Char] -> Int -> Int -> BiRange -> BiRange
-biBackwardSearchSegment bi p start end range =
-        biBackwardExtendExact bi range segment
-    where
-  segment = take (end - start + 1) (drop start p)
+-- | Number of occurrences currently covered by a range.
+rangeWidth :: BiRange -> Int
+rangeWidth r = snd (origRange r) - fst (origRange r)
 
--- | Forward-search over p[start..end] (inclusive) extending from an initial range.
-{-@ biForwardSearchSegment :: bi:BiIndex
-                         -> p:[Char]
-                         -> start:{v:Nat | v < len p}
-                         -> end:{v:Nat | start <= v && v < len p}
-                         -> range:{r:BiRange | fst (fwdRange r) <= snd (fwdRange r)
-                                                 && fst (bwdRange r) <= snd (bwdRange r)
-                                                 && snd (bwdRange r) <= len (bwt (bwd bi))}
-                         -> BiRange @-}
-biForwardSearchSegment :: BiIndex -> [Char] -> Int -> Int -> BiRange -> BiRange
-biForwardSearchSegment bi p start end range =
-        biForwardExtendExact bi range segment
-    where
-        segment = take (end - start + 1) (drop start p)
+-- | All alphabet characters that differ from the given one (and from the
+--   sentinel '$'). These are the candidate substitutions at a mismatch.
+enumerateMismatches :: BiFMIndex -> Char -> [Char]
+enumerateMismatches bi c = filter (\x -> x /= c && x /= '$') (map fst (ctab (orig bi)))
 
--- -- | For each position j (end down to start), pair j with the range that covers
--- --   P[j+1..m] exactly.
-{-@ exactPrefixRanges :: bi:BiIndex
-                        -> p:[Char]
-                        -> start:{v:Nat | 0 < v && v < len p}
-                        -> end:{v:Nat | start <= v && v < len p}
-                        -> range:{r:BiRange | fst (fwdRange r) <= snd (fwdRange r)
-                                            && snd (fwdRange r) <= len (bwt (fwd bi))
-                                            && fst (bwdRange r) <= snd (bwdRange r)}
-                        -> [(Int, BiRange)] @-}
-exactPrefixRanges :: BiIndex -> [Char] -> Int -> Int -> BiRange -> [(Int, BiRange)]
-exactPrefixRanges bi p start end range = go (end - 1) (biBackwardSearch bi range (p !! (end - 1)))
-  where
-    {-@ go :: j:{v:Nat | v <= end}
-           -> subrange:{r:BiRange | fst (fwdRange r) <= snd (fwdRange r)
-                                 && snd (fwdRange r) <= len (bwt (fwd bi))
-                                 && fst (bwdRange r) <= snd (bwdRange r)}
-           -> [(Int, BiRange)] @-}
-    -- j    : current 1-indexed position (counts down to start)
-    -- range: covers P[j+1..m] exactly
-    go j subrange
-      | j < start     = []
-      | otherwise = (j, subrange) : go (j - 1) (biBackwardSearch bi subrange (p !! (j - 1)))
+-- ---------------------------------------------------------------------------
+-- prefixExtension
+-- ---------------------------------------------------------------------------
 
--- | For each position i (start up to end), pair i with the range that covers
--- | P[1..i-1] exactly.
-{-@ exactSuffixRanges :: bi:BiIndex
-                        -> p:[Char]
-                        -> start:{v:Nat | 0 < v && v < len p}
-                        -> end:{v:Nat | start <= v && v < len p}
-                        -> range:{r:BiRange | fst (fwdRange r) <= snd (fwdRange r)
-                                            && fst (bwdRange r) <= snd (bwdRange r)
-                                            && snd (bwdRange r) <= len (bwt (bwd bi))}
-                        -> [(Int, BiRange)] @-}
-exactSuffixRanges :: BiIndex -> [Char] -> Int -> Int -> BiRange -> [(Int, BiRange)]
-exactSuffixRanges bi p start end range = go steps start range
-  where
-    steps = end - start + 1
-
-    {-@ go :: fuel:Nat
-           -> i:{v:Nat | start <= v && v <= end + 1 && v + fuel == end + 1}
-           -> subrange:{r:BiRange | fst (fwdRange r) <= snd (fwdRange r)
-                                 && fst (bwdRange r) <= snd (bwdRange r)
-                                 && snd (bwdRange r) <= len (bwt (bwd bi))}
-           -> [(Int, BiRange)] @-}
-    go :: Int -> Int -> BiRange -> [(Int, BiRange)]
-    -- i    : current 1-indexed position (counts up to end)
-    -- range: covers P[1..i-1] exactly
-    go fuel i subrange
-      | fuel == 0  = []
-      | otherwise  = (i, subrange) : go (fuel - 1) (i + 1) (biForwardSearch bi subrange (p !! (i - 1)))
-
-
-
--- | Discard empty ranges (lo >= hi means no occurrences).
-nonEmpty :: BiRange -> [BiRange] -- ----> MAKE IT BOOLEAN 
-nonEmpty r@(BiRange (lo, hi) _ _) = if lo < hi then [r] else []
-
--- | For each candidate (j, rangeJ), try every mismatch substitution at position j-1.
---   Returns (j-1, substitution, resulting range) for non-empty results.
-{-@ ignore tryMismatch @-}
-tryMismatch :: BiIndex -> [Char] -> [(Int, BiRange)] -> [(Int, Char, BiRange)]
-tryMismatch bi p candidates =
-  [ (j - 1, e, r)
-  | (j, rangeJ) <- candidates
-  , e <- enumerateMismatches bi (p !! (j - 1))
-  , let r = biBackwardSearch bi rangeJ e
-  , _ <- nonEmpty r
-  ]
-
--- | Extend prefix ranges from end-1 down to start, filtering empty ranges.
---   When end == start == 0, returns the seed range at position 0 (if non-empty).
+-- | Extend every (state, pos) pair one character at a time, walking pattern
+--   positions @pos - 1@ down to @0@ -- exactly the order 'biBackwardSearch'
+--   needs, since it grows the pattern to the left. Extending is "free" (no
+--   checkpoint) as long as the range keeps the same width. The moment adding
+--   the next character would either narrow the range (some of the
+--   occurrences matched so far stop matching -- a good spot to later try a
+--   mismatch there) or empty it out entirely, the state *before* that
+--   character is emitted as a checkpoint; narrowing keeps going with the
+--   smaller range afterwards, emptying stops the walk right there. Running
+--   out of characters (pos == 0) also emits the state reached so far -- in
+--   particular, an entry that's already at position 0 just gets handed back
+--   unchanged.
+--
+--   The substring is indexed absolutely (its index 0 is the pattern's index
+--   0), so entries at different positions can share the same call: each one
+--   only ever looks at @s !! (pos - 1)@, @s !! (pos - 2)@, ... down to
+--   @s !! 0@.
 {-@ ignore prefixExtension @-}
-prefixExtension :: BiIndex -> [Char] -> Int -> Int -> BiRange -> [(Int, BiRange)]
-prefixExtension bi p start end range
-  | end == 0 && start == 0 = [(0, range) | _ <- nonEmpty range]
-  | end <= start           = []
-  | otherwise              = go (end - 1) (biBackwardSearch bi range (p !! (end - 1)))
+prefixExtension :: [(BiState, Int)] -> String -> [(BiState, Int)]
+prefixExtension states s = concatMap extendOne states
   where
-    go j subrange
-      | j < start = []
-      | otherwise = [ (j, subrange) | _ <- nonEmpty subrange ]
-                 ++ go (j - 1) (biBackwardSearch bi subrange (p !! (j - 1)))
+    extendOne :: (BiState, Int) -> [(BiState, Int)]
+    extendOne (st, pos)
+      | pos < 0 || pos > length s = []
+      | otherwise                 = go (reverse (take pos s)) st pos
+
+    go :: String -> BiState -> Int -> [(BiState, Int)]
+    go []     cur curPos = [(cur, curPos)]
+    go (c:cs) cur curPos
+      | isEmptyRange (range candidate)          = [(cur, curPos)]
+      | rangeWidth (range candidate) < curWidth = (cur, curPos) : go cs candidate (curPos - 1)
+      | otherwise                                = go cs candidate (curPos - 1)
+      where
+        candidate = biBackwardSearch cur c
+        curWidth  = rangeWidth (range cur)
 
 -- ---------------------------------------------------------------------------
--- Case A
+-- prefixMismatch
 -- ---------------------------------------------------------------------------
 
--- | Case A: both mismatches e1 < e2 lie within P[1..s2] (the first two parts).
+-- | For each (state, pos) pair, introduce a single mismatch at the position
+--   right before it: try every alphabet symbol other than the one that
+--   actually occurs there, keeping only the resulting non-empty states.
 --
---   Split points (1-indexed):
---     s1 – end of part 1  (P1 = P[1..s1], not used in this case)
---     s2 – end of part 2  (P2 = P[s1+1..s2], P3 = P[s2+1..m])
---
---   Returns all BiRanges with exactly 2 mismatches, both located in P[1..s2].
---   Executable step-by-step walkthrough and a concrete `caseA` implementation
---   are now in app/Main.hs.
+--   The substring is indexed absolutely (its index 0 is the pattern's index
+--   0), so entries at different positions can share the same call: the
+--   correct character to avoid for a given (state, pos) is @s !! (pos - 1)@,
+--   not simply the last character of s.
+{-@ ignore prefixMismatch @-}
+prefixMismatch :: [(BiState, Int)] -> String -> [(BiState, Int)]
+prefixMismatch states s = concatMap mismatchOne states
+  where
+    mismatchOne :: (BiState, Int) -> [(BiState, Int)]
+    mismatchOne (st, pos)
+      | pos <= 0 || pos > length s = []
+      | otherwise =
+          [ (st', pos - 1)
+          | e <- enumerateMismatches (index st) correct
+          , let st' = biBackwardSearch st e
+          , not (isEmptyRange (range st'))
+          ]
+      where
+        correct = s !! (pos - 1)

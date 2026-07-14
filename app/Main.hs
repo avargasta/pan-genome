@@ -8,49 +8,66 @@ import FMIndex.Tables ( cTable, occTable )
 import FMIndex.Search ( backwardSearch, locate)
 import BiFMIndex.BiFMIndex ( buildBiFMIndex, initializeBiState )
 -- import BiFMIndex.BiForwardSearch ( biForwardSearch )
-import BiFMIndex.BiBackwardSearch ( biBackwardSearch )
-import BiFMIndex.Types ( BiState(..) )
--- import Alignment.BidirectionalSearch
---   ( biBackwardSearchSegment
---   , prefixExtension
---   , tryMismatch
---   )
+import BiFMIndex.BiBackwardSearch ( biBackwardSearch, biBackwardExtendExact )
+import BiFMIndex.Types ( BiFMIndex, BiState(..) )
+import Alignment.BidirectionalSearch ( prefixExtension, prefixMismatch )
 
--- {-@ ignore runCaseAStepByStep @-}
--- runCaseAStepByStep :: BiFMIndex -> IO ()
--- runCaseAStepByStep bi = do
---   let p = "enamoramiento"
---   let s1 = length p `div` 3
---   let s2 = 2 * length p `div` 3
---   let m = length p - 1
---   let initial = initializeBiState bi
+-- | Step-by-step walkthrough of the 2-mismatch search for pattern
+--   "dignifica" against a text that contains two occurrences of it: one with
+--   mismatches at pattern positions 0 and 1 ("xxgnifica"), one with
+--   mismatches at positions 1 and 4 ("dxgnxfica").
 --
---   putStrLn "\n=== Case A: flujo paso a paso ==="
---   putStrLn $ "Patron: " ++ show p
---   putStrLn $ "Split points: s1=" ++ show s1 ++ ", s2=" ++ show s2 ++ ", m=" ++ show m
---
---   let rangeP3 = biBackwardSearchSegment bi p s2 m initial
---   putStrLn $ "Paso 1 - Buscar P3 = P[s2-1..m] (0-index): " ++ show rangeP3
---
---   let prefixes_1 = prefixExtension bi p 1 s2 rangeP3
---   putStrLn "\nPaso 2 - Rangos exactos para prefijos (i, rangeI):"
---   print prefixes_1
---
---   let stepE2 = tryMismatch bi p prefixes_1
---   putStrLn "\nPaso 3 - Probar segunda discrepancia e2 en cada j:"
---   print stepE2
---
---   let prefixes_2 = concatMap (\(j, _, r) -> prefixExtension bi p 1 j r) stepE2
---   putStrLn "\nPaso 4 - Rangos exactos para prefijos (i, rangeI):"
---   print prefixes_2
---
---   let stepE1 = tryMismatch bi p prefixes_2
---   putStrLn "\nPaso 5 - Probar primera discrepancia e1 en cada i:"
---   print stepE1
---
---   let prefixes_3 = concatMap (\(j, _, r) -> prefixExtension bi p 0 j r) stepE1
---   putStrLn "\nPaso 6 - Rangos exactos para prefijos (i, rangeI):"
---   print prefixes_3
+--   At every step we pass the whole pattern @p@, even though the entries in
+--   a list can sit at different positions: both 'prefixExtension' and
+--   'prefixMismatch' index into it absolutely from each entry's own @pos@,
+--   so a single shared call handles the whole (possibly mixed-position)
+--   branch list at once.
+{-@ ignore runDignificaWalkthrough @-}
+runDignificaWalkthrough :: BiFMIndex -> IO ()
+runDignificaWalkthrough bi = do
+  let p       = "dignifica"
+  let initial = initializeBiState bi
+
+  putStrLn "\n=== Walkthrough: pattern \"dignifica\", 2 allowed mismatches ==="
+  putStrLn $ "Patron: " ++ show p
+
+  -- 1. biBackwardExtendExact: exact match of the error-free suffix "ica".
+  let suffix = "ica"
+  let pos1   = length p - length suffix
+  let st1    = biBackwardExtendExact initial suffix
+  putStrLn $ "\n1. biBackwardExtendExact " ++ show suffix ++ " (pos=" ++ show pos1 ++ "):"
+  print (range st1)
+
+  -- 2. prefixExtension: extend left, checkpointing at every narrowing/wall.
+  let e2 = prefixExtension [(st1, pos1)] p
+  putStrLn "\n2. prefixExtension:"
+  mapM_ (\(st, pos) -> putStrLn $ show pos ++ " -> " ++ show (range st)) e2
+
+  -- 3. prefixMismatch: try a mismatch right before each checkpoint. e2 has
+  --    entries at different positions, but prefixMismatch now looks up each
+  --    one's own correct character via `p !! (pos - 1)`, so one shared call
+  --    over the whole list (no concatMap needed) is enough.
+  let e3 = prefixMismatch e2 p
+  putStrLn "\n3. prefixMismatch:"
+  mapM_ (\(st, pos) -> putStrLn $ show pos ++ " -> " ++ show (range st)) e3
+
+  -- 4. prefixExtension: extend each mismatch branch to its next wall. e3 has
+  --    entries at different positions, but prefixExtension now walks each
+  --    one from its own `pos - 1` down to 0 within the shared p, so one call
+  --    over the whole list is enough.
+  let e4 = prefixExtension e3 p
+  putStrLn "\n4. prefixExtension:"
+  mapM_ (\(st, pos) -> putStrLn $ show pos ++ " -> " ++ show (range st)) e4
+
+  -- 5. prefixMismatch: the second mismatch per branch, same reasoning as (3).
+  let e5 = prefixMismatch e4 p
+  putStrLn "\n5. prefixMismatch:"
+  mapM_ (\(st, pos) -> putStrLn $ show pos ++ " -> " ++ show (range st)) e5
+
+  -- 6. prefixExtension: final exact extension down to the start of p.
+  let e6 = prefixExtension e5 p
+  putStrLn "\n6. prefixExtension (final):"
+  mapM_ (\(st, pos) -> putStrLn $ show pos ++ " -> " ++ show (range st)) e6
 
 
 main :: IO ()
@@ -91,4 +108,6 @@ main = do
   -- let state_4 = biForwardSearch state_3 'n'
   -- putStrLn $ "Bidirectional forward search: " ++ show (range state_4)
 
-  -- runCaseAStepByStep bi
+  let txt2 = "el trabajo no xxgnifica, lo que dxgnxfica es el tiempo libre"
+  let bi2  = buildBiFMIndex txt2
+  runDignificaWalkthrough bi2

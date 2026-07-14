@@ -19,11 +19,11 @@ library
      , FMIndex.Tables
      , FMIndex.Types
      , FMIndex.FMIndex
-     , BiIndex.Types
-      , BiIndex.BiIndex
-      , BiIndex.BiForwardSearch
-      , BiIndex.BiBackwardSearch
-      , Alignment.BidirectionalSearch
+     , BiFMIndex.Types
+      , BiFMIndex.BiFMIndex
+      , BiFMIndex.BiForwardSearch
+      , BiFMIndex.BiBackwardSearch
+      -- , Alignment.BidirectionalSearch
   hs-source-dirs:
       src
   ghc-options:
@@ -42,7 +42,6 @@ executable pan-genome
     main-is:          Main.hs
     build-depends:    base >=4.7 && <5
     hs-source-dirs:   app
-    default-language: Haskell2010
     ghc-options:
       -fplugin=LiquidHaskell
     build-depends:

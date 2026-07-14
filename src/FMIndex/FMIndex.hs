@@ -7,6 +7,7 @@ import FMIndex.Tables ( cTable, occTable )
 import FMIndex.BWT (buildBWT, buildSA)
 import Data.RList
 
+{-@ buildFMIndex :: t:[Char] -> {v:FMIndex | len (bwt v) == len t + 1} @-}
 buildFMIndex :: [Char] -> FMIndex
 buildFMIndex t = FMIndex bwt ctab occtab suffix_array undefined
   where

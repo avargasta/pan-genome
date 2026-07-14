@@ -9,5 +9,6 @@ assert _ x = x
 assume :: Bool -> a -> a
 assume _ x = x
 
+{-@ (?) :: x:a -> p:b -> {v:a | v == x} @-}
 (?) :: a -> b -> a
 x ? _ = x

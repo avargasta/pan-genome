@@ -1,5 +1,5 @@
-{-@ LIQUID "--reflection" @-}
-{-@ LIQUID "--ple"        @-}
+{-@ LIQUID "--reflection"     @-}
+{-@ LIQUID "--ple"            @-}
 
 module BiFMIndex.BiBackwardSearch where
 
@@ -23,9 +23,9 @@ offsetBackward st symbol = go (ctab (orig (index st)))
                      in (e - s) + go cs
       | otherwise  = go cs
 
--- | Teorema de partición del BWT bidireccional (Lam et al. 2009):
--- rLo + offset + (noHi - noLo) <= rHi, es decir, el nuevo extremo
--- superior del rango reverso queda dentro del rango reverso actual.
+-- | Bidirectional BWT partition theorem (Lam et al. 2009):
+-- rLo + offset + (noHi - noLo) <= rHi, i.e., the new upper
+-- bound of the reverse range lies within the current reverse range.
 {-@ assume countBound
       :: off:Nat
       -> noLo:Nat

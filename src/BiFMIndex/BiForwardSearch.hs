@@ -23,16 +23,16 @@ offsetForward st symbol = go (ctab (rev (index st)))
                      in (e - s) + go cs
       | otherwise  = go cs
 
--- | Teorema de partición del BWT bidireccional (Lam et al. 2009):
--- fLo + offset + (nbHi - nbLo) <= fHi, es decir, el nuevo extremo
--- superior del rango original queda dentro del rango original actual.
+-- | Bidirectional BWT partition theorem (Lam et al. 2009):
+-- oLo + offset + (nrHi - nrLo) <= oHi, i.e., the new upper
+-- bound of the original range lies within the current original range.
 {-@ assume countBoundFwd
       :: off:Nat
-      -> nbLo:Nat
-      -> nbHi:{Nat | nbLo <= nbHi}
-      -> fLo:Nat
-      -> fHi:{Nat | fLo <= fHi}
-      -> {v:() | fLo + off + nbHi - nbLo <= fHi} @-}
+      -> nrLo:Nat
+      -> nrHi:{Nat | nrLo <= nrHi}
+      -> oLo:Nat
+      -> oHi:{Nat | oLo <= oHi}
+      -> {v:() | oLo + off + nrHi - nrLo <= oHi} @-}
 countBoundFwd :: Int -> Int -> Int -> Int -> Int -> ()
 countBoundFwd _ _ _ _ _ = ()
 

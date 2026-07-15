@@ -1,4 +1,4 @@
-{-@ LIQUID "--reflection" @-}
+{-@ LIQUID "--reflection"     @-}
 
 module BiFMIndex.BiFMIndex where
 

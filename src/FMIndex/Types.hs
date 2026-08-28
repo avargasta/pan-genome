@@ -24,6 +24,15 @@ data FMIndex = FMIndex
     -- deriving it for real would mean reflecting
     -- 'FMIndex.Tables.buildOccList' and proving it by induction on BWT
     -- positions instead.
+  , saLen :: ()
+    -- ^ The suffix array has exactly as many entries as the BWT. Lets
+    -- 'FMIndex.Search.locate' be called with a bound already known against
+    -- 'bwt' (as tracked by e.g. BiFMIndex's range invariant) without
+    -- re-deriving it against 'sa' every time. Assumed via 'undefined' at
+    -- construction, same as 'inv'/'offsetBound'; both 'FMIndex.BWT.buildBWT'
+    -- and 'FMIndex.BWT.buildSA' are already independently proven to return
+    -- 'len t + 1' entries, so this is a real fact, just not one wired up
+    -- through reflection here.
   }
 
 {-@ data FMIndex = FMIndex
@@ -36,6 +45,7 @@ data FMIndex = FMIndex
        -> { offsetTable symbol (lo rng) (hi rng) ks occtab
             + (occLookup symbol (hi rng) occtab - occLookup symbol (lo rng) occtab)
             <= hi rng - lo rng }
+   , saLen :: {v:() | len sa == len bwt}
    } @-}
 
 instance Show FMIndex where

@@ -21,35 +21,33 @@ import Data.ProofCombinators ((?))
 offsetBackward :: BiState -> Char -> Int
 offsetBackward st symbol = offsetTable symbol (lo rng) (hi rng) (ctab fi) (occtab fi)
   where
-    rng = origRange (range st)
-    fi  = orig (index st)
+    rng = range (biRange st)
+    fi  = fmidx (biIndex st)
 
 -- | Extend the current pattern with one symbol.
 {-@ biBackwardSearch :: BiState -> Char -> BiState @-}
 biBackwardSearch :: BiState -> Char -> BiState
 biBackwardSearch st symbol =
   BiState
-    { index = bi
-    , range = BiRange
-        { pattern   = nextPattern
-        , origRange = nextOrigRange
-        , revRange  = nextRevRange
+    { biIndex = bi
+    , biRange = BiRange
+        { pattern = nextPattern
+        , range   = nextRange
+        , rangeR  = nextRangeR
         }
     }
   where
-    bi            = index st
-    r             = range st
-    nextPattern   = [symbol] ++ pattern r
-    nextOrigRange = backwardStep symbol (orig bi) (origRange r)
+    bi          = biIndex st
+    r           = biRange st
+    nextPattern = [symbol] ++ pattern r
+    nextRange   = backwardStep symbol (fmidx bi) (range r)
 
-    rLo    = lo (revRange r)
-    rHi    = hi (revRange r)
-    offset = offsetBackward st symbol ? offsetBound (orig bi) symbol (origRange r) (ctab (orig bi))
-    noLo   = lo nextOrigRange
-    noHi   = hi nextOrigRange
-    nrLo          = rLo + offset
-    nrHi          = nrLo + (noHi - noLo)
-    nextRevRange  = Range nrLo nrHi
+    Range loR hiR = rangeR r
+    offset = offsetBackward st symbol ? offsetBound (fmidx bi) symbol (range r) (ctab (fmidx bi))
+    Range lo' hi' = nextRange
+    loR'        = loR + offset
+    hiR'        = loR' + (hi' - lo')
+    nextRangeR  = Range loR' hiR'
 
 {-@ biBackwardExtendExact :: BiState -> String -> BiState @-}
 biBackwardExtendExact :: BiState -> String -> BiState

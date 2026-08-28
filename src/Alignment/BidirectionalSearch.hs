@@ -29,12 +29,12 @@ isEmptyRange r = rangeWidth r <= 0
 
 -- | Number of occurrences currently covered by a range.
 rangeWidth :: BiRange -> Int
-rangeWidth r = hi (origRange r) - lo (origRange r)
+rangeWidth r = hi (range r) - lo (range r)
 
 -- | All alphabet characters that differ from the given one (and from the
 --   sentinel '$'). These are the candidate substitutions at a mismatch.
 enumerateMismatches :: BiFMIndex -> Char -> [Char]
-enumerateMismatches bi c = filter (\x -> x /= c && x /= '$') (map fst (ctab (orig bi)))
+enumerateMismatches bi c = filter (\x -> x /= c && x /= '$') (map fst (ctab (fmidx bi)))
 
 -- ---------------------------------------------------------------------------
 -- prefixExtension
@@ -73,13 +73,13 @@ prefixExtension states s = concatMap extendOne states
     go :: BiState -> Int -> Int -> [(BiState, (Int, Int))]
     go cur 0      end = [(cur, (0, end))]
     go cur curPos end
-      | isEmptyRange (range candidate)          = [(cur, (curPos, end))]
-      | rangeWidth (range candidate) < curWidth = (cur, (curPos, end)) : go candidate (curPos - 1) end
+      | isEmptyRange (biRange candidate)          = [(cur, (curPos, end))]
+      | rangeWidth (biRange candidate) < curWidth = (cur, (curPos, end)) : go candidate (curPos - 1) end
       | otherwise                                = go candidate (curPos - 1) end
       where
         c         = s !! (curPos - 1)
         candidate = biBackwardSearch cur c
-        curWidth  = rangeWidth (range cur)
+        curWidth  = rangeWidth (biRange cur)
 
 -- ---------------------------------------------------------------------------
 -- prefixMismatch
@@ -97,18 +97,19 @@ prefixExtension states s = concatMap extendOne states
 --   @s !! (start - 1)@, not simply the last character of s.
 {-@ prefixMismatch :: [(BiState, (Nat, Nat))] -> String -> [(BiState, (Nat, Nat))] @-}
 prefixMismatch :: [(BiState, (Int, Int))] -> String -> [(BiState, (Int, Int))]
-prefixMismatch states s = concatMap (\(st, (start, end)) -> mismatchOne st start end) states
+prefixMismatch states s = concatMap mismatchOne states
   where
-    {-@ mismatchOne :: BiState -> Nat -> Nat -> [(BiState, (Nat, Nat))] @-}
-    mismatchOne :: BiState -> Int -> Int -> [(BiState, (Int, Int))]
-    mismatchOne _  0     _   = []
-    mismatchOne st start end
+
+    {-@ mismatchOne :: (BiState, (Nat, Nat)) -> [(BiState, (Nat, Nat))] @-}
+    mismatchOne :: (BiState, (Int, Int)) -> [(BiState, (Int, Int))]
+    mismatchOne ( _ , (0, _)) = []
+    mismatchOne (st, (start, end))
       | start > length s = []
-      | otherwise         = mismatchAt st start end
+      | otherwise        = mismatchAt st start end
 
     {-@ mismatchAt :: BiState -> {v:Nat | 0 < v && v <= len s} -> Nat -> [(BiState, (Nat, Nat))] @-}
     mismatchAt :: BiState -> Int -> Int -> [(BiState, (Int, Int))]
-    mismatchAt st start end = tryAll (start - 1) (enumerateMismatches (index st) correct)
+    mismatchAt st start end = tryAll (start - 1) (enumerateMismatches (biIndex st) correct)
       where
         correct = s !! (start - 1)
 
@@ -116,7 +117,7 @@ prefixMismatch states s = concatMap (\(st, (start, end)) -> mismatchOne st start
         tryAll :: Int -> [Char] -> [(BiState, (Int, Int))]
         tryAll _      []     = []
         tryAll newPos (e:es)
-          | isEmptyRange (range candidate) = rest
+          | isEmptyRange (biRange candidate) = rest
           | otherwise                        = (candidate, (newPos, end)) : rest
           where
             candidate = biBackwardSearch st e
@@ -162,10 +163,10 @@ suffixExtension states s = concatMap extendOneR states
       | otherwise =
           let c         = s !! end
               candidate = biForwardSearch cur c
-              curWidth  = rangeWidth (range cur)
-          in if isEmptyRange (range candidate) then
+              curWidth  = rangeWidth (biRange cur)
+          in if isEmptyRange (biRange candidate) then
                [(cur, (start, end))]
-             else if rangeWidth (range candidate) < curWidth then
+             else if rangeWidth (biRange candidate) < curWidth then
                (cur, (start, end)) : goR candidate start (end + 1)
              else
                goR candidate start (end + 1)
@@ -186,17 +187,17 @@ suffixExtension states s = concatMap extendOneR states
 --   simply the first character of s.
 {-@ suffixMismatch :: [(BiState, (Nat, Nat))] -> String -> [(BiState, (Nat, Nat))] @-}
 suffixMismatch :: [(BiState, (Int, Int))] -> String -> [(BiState, (Int, Int))]
-suffixMismatch states s = concatMap (\(st, (start, end)) -> mismatchOneR st start end) states
+suffixMismatch states s = concatMap mismatchOneR states
   where
-    {-@ mismatchOneR :: BiState -> Nat -> Nat -> [(BiState, (Nat, Nat))] @-}
-    mismatchOneR :: BiState -> Int -> Int -> [(BiState, (Int, Int))]
-    mismatchOneR st start end
+    {-@ mismatchOneR :: (BiState, (Nat, Nat)) -> [(BiState, (Nat, Nat))] @-}
+    mismatchOneR :: (BiState, (Int, Int)) -> [(BiState, (Int, Int))]
+    mismatchOneR (st, (start, end))
       | end >= length s = []
       | otherwise        = mismatchAtR st start end
 
     {-@ mismatchAtR :: BiState -> Nat -> {v:Nat | v < len s} -> [(BiState, (Nat, Nat))] @-}
     mismatchAtR :: BiState -> Int -> Int -> [(BiState, (Int, Int))]
-    mismatchAtR st start end = tryAllR (end + 1) (enumerateMismatches (index st) correct)
+    mismatchAtR st start end = tryAllR (end + 1) (enumerateMismatches (biIndex st) correct)
       where
         correct = s !! end
 
@@ -204,7 +205,7 @@ suffixMismatch states s = concatMap (\(st, (start, end)) -> mismatchOneR st star
         tryAllR :: Int -> [Char] -> [(BiState, (Int, Int))]
         tryAllR _      []     = []
         tryAllR newEnd (e:es)
-          | isEmptyRange (range candidate) = rest
+          | isEmptyRange (biRange candidate) = rest
           | otherwise                        = (candidate, (start, newEnd)) : rest
           where
             candidate = biForwardSearch st e

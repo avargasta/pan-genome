@@ -4,6 +4,7 @@ module Alignment.BidirectionalSearch where
 
 import BiFMIndex.Types (BiFMIndex(..), BiRange(..), BiState(..))
 import BiFMIndex.BiBackwardSearch (biBackwardSearch)
+import BiFMIndex.BiForwardSearch (biForwardSearch)
 import FMIndex.Types (ctab, Range(..))
 
 -- Me gustaría tener:
@@ -39,39 +40,44 @@ enumerateMismatches bi c = filter (\x -> x /= c && x /= '$') (map fst (ctab (ori
 -- prefixExtension
 -- ---------------------------------------------------------------------------
 
--- | Extend every (state, pos) pair one character at a time, walking pattern
---   positions @pos - 1@ down to @0@ -- exactly the order 'biBackwardSearch'
---   needs, since it grows the pattern to the left. Extending is "free" (no
---   checkpoint) as long as the range keeps the same width. The moment adding
---   the next character would either narrow the range (some of the
---   occurrences matched so far stop matching -- a good spot to later try a
---   mismatch there) or empty it out entirely, the state *before* that
---   character is emitted as a checkpoint; narrowing keeps going with the
---   smaller range afterwards, emptying stops the walk right there. Running
---   out of characters (pos == 0) also emits the state reached so far -- in
---   particular, an entry that's already at position 0 just gets handed back
---   unchanged.
+-- | Extend every (state, (start, end)) entry one character at a time,
+--   walking pattern positions @start - 1@ down to @0@ -- exactly the order
+--   'biBackwardSearch' needs, since it grows the pattern to the left. Only
+--   @start@ drives the walk; @end@ is carried through untouched and simply
+--   identifies the position of the pattern where this entry's match ends.
+--   Extending is "free" (no checkpoint) as long as the range keeps the same
+--   width. The moment adding the next character would either narrow the
+--   range (some of the occurrences matched so far stop matching -- a good
+--   spot to later try a mismatch there) or empty it out entirely, the state
+--   *before* that character is emitted as a checkpoint; narrowing keeps
+--   going with the smaller range afterwards, emptying stops the walk right
+--   there. Running out of characters (start == 0) also emits the state
+--   reached so far -- in particular, an entry that's already at start 0
+--   just gets handed back unchanged.
 --
 --   The substring is indexed absolutely (its index 0 is the pattern's index
 --   0), so entries at different positions can share the same call: each one
---   only ever looks at @s !! (pos - 1)@, @s !! (pos - 2)@, ... down to
+--   only ever looks at @s !! (start - 1)@, @s !! (start - 2)@, ... down to
 --   @s !! 0@.
-{-@ ignore prefixExtension @-}
-prefixExtension :: [(BiState, Int)] -> String -> [(BiState, Int)]
+{-@ prefixExtension :: [(BiState, (Nat, Nat))] -> String -> [(BiState, (Nat, Nat))] @-}
+prefixExtension :: [(BiState, (Int, Int))] -> String -> [(BiState, (Int, Int))]
 prefixExtension states s = concatMap extendOne states
   where
-    extendOne :: (BiState, Int) -> [(BiState, Int)]
-    extendOne (st, pos)
-      | pos < 0 || pos > length s = []
-      | otherwise                 = go (reverse (take pos s)) st pos
+    {-@ extendOne :: (BiState, (Nat, Nat)) -> [(BiState, (Nat, Nat))] @-}
+    extendOne :: (BiState, (Int, Int)) -> [(BiState, (Int, Int))]
+    extendOne (st, (start, end))
+      | start < 0 || start > length s = []
+      | otherwise                     = go st start end
 
-    go :: String -> BiState -> Int -> [(BiState, Int)]
-    go []     cur curPos = [(cur, curPos)]
-    go (c:cs) cur curPos
-      | isEmptyRange (range candidate)          = [(cur, curPos)]
-      | rangeWidth (range candidate) < curWidth = (cur, curPos) : go cs candidate (curPos - 1)
-      | otherwise                                = go cs candidate (curPos - 1)
+    {-@ go :: BiState -> {v:Nat | v <= len s} -> Nat -> [(BiState, (Nat, Nat))] @-}
+    go :: BiState -> Int -> Int -> [(BiState, (Int, Int))]
+    go cur 0      end = [(cur, (0, end))]
+    go cur curPos end
+      | isEmptyRange (range candidate)          = [(cur, (curPos, end))]
+      | rangeWidth (range candidate) < curWidth = (cur, (curPos, end)) : go candidate (curPos - 1) end
+      | otherwise                                = go candidate (curPos - 1) end
       where
+        c         = s !! (curPos - 1)
         candidate = biBackwardSearch cur c
         curWidth  = rangeWidth (range cur)
 
@@ -79,26 +85,127 @@ prefixExtension states s = concatMap extendOne states
 -- prefixMismatch
 -- ---------------------------------------------------------------------------
 
--- | For each (state, pos) pair, introduce a single mismatch at the position
---   right before it: try every alphabet symbol other than the one that
---   actually occurs there, keeping only the resulting non-empty states.
+-- | For each (state, (start, end)) entry, introduce a single mismatch at
+--   the position right before @start@: try every alphabet symbol other than
+--   the one that actually occurs there, keeping only the resulting
+--   non-empty states. @end@ is only ever carried through unchanged, never
+--   read.
 --
 --   The substring is indexed absolutely (its index 0 is the pattern's index
 --   0), so entries at different positions can share the same call: the
---   correct character to avoid for a given (state, pos) is @s !! (pos - 1)@,
---   not simply the last character of s.
-{-@ ignore prefixMismatch @-}
-prefixMismatch :: [(BiState, Int)] -> String -> [(BiState, Int)]
-prefixMismatch states s = concatMap mismatchOne states
+--   correct character to avoid for a given (state, start) is
+--   @s !! (start - 1)@, not simply the last character of s.
+{-@ prefixMismatch :: [(BiState, (Nat, Nat))] -> String -> [(BiState, (Nat, Nat))] @-}
+prefixMismatch :: [(BiState, (Int, Int))] -> String -> [(BiState, (Int, Int))]
+prefixMismatch states s = concatMap (\(st, (start, end)) -> mismatchOne st start end) states
   where
-    mismatchOne :: (BiState, Int) -> [(BiState, Int)]
-    mismatchOne (st, pos)
-      | pos <= 0 || pos > length s = []
-      | otherwise =
-          [ (st', pos - 1)
-          | e <- enumerateMismatches (index st) correct
-          , let st' = biBackwardSearch st e
-          , not (isEmptyRange (range st'))
-          ]
+    {-@ mismatchOne :: BiState -> Nat -> Nat -> [(BiState, (Nat, Nat))] @-}
+    mismatchOne :: BiState -> Int -> Int -> [(BiState, (Int, Int))]
+    mismatchOne _  0     _   = []
+    mismatchOne st start end
+      | start > length s = []
+      | otherwise         = mismatchAt st start end
+
+    {-@ mismatchAt :: BiState -> {v:Nat | 0 < v && v <= len s} -> Nat -> [(BiState, (Nat, Nat))] @-}
+    mismatchAt :: BiState -> Int -> Int -> [(BiState, (Int, Int))]
+    mismatchAt st start end = tryAll (start - 1) (enumerateMismatches (index st) correct)
       where
-        correct = s !! (pos - 1)
+        correct = s !! (start - 1)
+
+        {-@ tryAll :: Nat -> [Char] -> [(BiState, (Nat, Nat))] @-}
+        tryAll :: Int -> [Char] -> [(BiState, (Int, Int))]
+        tryAll _      []     = []
+        tryAll newPos (e:es)
+          | isEmptyRange (range candidate) = rest
+          | otherwise                        = (candidate, (newPos, end)) : rest
+          where
+            candidate = biBackwardSearch st e
+            rest      = tryAll newPos es
+
+-- ---------------------------------------------------------------------------
+-- suffixExtension
+-- ---------------------------------------------------------------------------
+
+-- | Mirror image of 'prefixExtension': extend every (state, (start, end))
+--   entry one character at a time, walking pattern positions @end@ up to
+--   @length s - 1@ -- the order 'biForwardSearch' needs, since it grows the
+--   pattern to the right. Only @end@ drives the walk; @start@ is carried
+--   through untouched and simply identifies the position of the pattern
+--   where this entry's match begins. Extending is "free" (no checkpoint) as
+--   long as the range keeps the same width. The moment adding the next
+--   character would either narrow the range (a good spot to later try a
+--   mismatch there) or empty it out entirely, the state *before* that
+--   character is emitted as a checkpoint; narrowing keeps going with the
+--   smaller range afterwards, emptying stops the walk right there. Running
+--   out of characters (end == length s) also emits the state reached so far
+--   -- in particular, an entry already at the end of s just gets handed
+--   back unchanged.
+--
+--   The substring is indexed absolutely (its index 0 is the pattern's index
+--   0), so entries at different positions can share the same call: each one
+--   only ever looks at @s !! end@, @s !! (end + 1)@, ... up to
+--   @s !! (length s - 1)@.
+{-@ suffixExtension :: [(BiState, (Nat, Nat))] -> String -> [(BiState, (Nat, Nat))] @-}
+suffixExtension :: [(BiState, (Int, Int))] -> String -> [(BiState, (Int, Int))]
+suffixExtension states s = concatMap extendOneR states
+  where
+    {-@ extendOneR :: (BiState, (Nat, Nat)) -> [(BiState, (Nat, Nat))] @-}
+    extendOneR :: (BiState, (Int, Int)) -> [(BiState, (Int, Int))]
+    extendOneR (st, (start, end))
+      | end < 0 || end > length s = []
+      | otherwise                 = goR st start end
+
+    {-@ goR :: cur:BiState -> start:Nat -> end:{v:Nat | v <= len s} -> [(BiState, (Nat, Nat))] / [len s - end] @-}
+    goR :: BiState -> Int -> Int -> [(BiState, (Int, Int))]
+    goR cur start end
+      | end == length s = [(cur, (start, end))]
+      | otherwise =
+          let c         = s !! end
+              candidate = biForwardSearch cur c
+              curWidth  = rangeWidth (range cur)
+          in if isEmptyRange (range candidate) then
+               [(cur, (start, end))]
+             else if rangeWidth (range candidate) < curWidth then
+               (cur, (start, end)) : goR candidate start (end + 1)
+             else
+               goR candidate start (end + 1)
+
+-- ---------------------------------------------------------------------------
+-- suffixMismatch
+-- ---------------------------------------------------------------------------
+
+-- | Mirror image of 'prefixMismatch': for each (state, (start, end)) entry,
+--   introduce a single mismatch at the position right at @end@: try every
+--   alphabet symbol other than the one that actually occurs there, keeping
+--   only the resulting non-empty states. @start@ is only ever carried
+--   through unchanged, never read.
+--
+--   The substring is indexed absolutely (its index 0 is the pattern's index
+--   0), so entries at different positions can share the same call: the
+--   correct character to avoid for a given (state, end) is @s !! end@, not
+--   simply the first character of s.
+{-@ suffixMismatch :: [(BiState, (Nat, Nat))] -> String -> [(BiState, (Nat, Nat))] @-}
+suffixMismatch :: [(BiState, (Int, Int))] -> String -> [(BiState, (Int, Int))]
+suffixMismatch states s = concatMap (\(st, (start, end)) -> mismatchOneR st start end) states
+  where
+    {-@ mismatchOneR :: BiState -> Nat -> Nat -> [(BiState, (Nat, Nat))] @-}
+    mismatchOneR :: BiState -> Int -> Int -> [(BiState, (Int, Int))]
+    mismatchOneR st start end
+      | end >= length s = []
+      | otherwise        = mismatchAtR st start end
+
+    {-@ mismatchAtR :: BiState -> Nat -> {v:Nat | v < len s} -> [(BiState, (Nat, Nat))] @-}
+    mismatchAtR :: BiState -> Int -> Int -> [(BiState, (Int, Int))]
+    mismatchAtR st start end = tryAllR (end + 1) (enumerateMismatches (index st) correct)
+      where
+        correct = s !! end
+
+        {-@ tryAllR :: Nat -> [Char] -> [(BiState, (Nat, Nat))] @-}
+        tryAllR :: Int -> [Char] -> [(BiState, (Int, Int))]
+        tryAllR _      []     = []
+        tryAllR newEnd (e:es)
+          | isEmptyRange (range candidate) = rest
+          | otherwise                        = (candidate, (start, newEnd)) : rest
+          where
+            candidate = biForwardSearch st e
+            rest      = tryAllR newEnd es

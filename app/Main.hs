@@ -2,112 +2,107 @@
 
 module Main where
 
-import FMIndex.BWT ( buildBWT, buildSA )
-import FMIndex.Types ( FMIndex(..), Range(..) )
-import FMIndex.Tables ( cTable, occTable )
-import FMIndex.Search ( backwardSearch, locate)
+import FMIndex.Search ( locate )
 import BiFMIndex.BiFMIndex ( buildBiFMIndex, initializeBiState )
--- import BiFMIndex.BiForwardSearch ( biForwardSearch )
-import BiFMIndex.BiBackwardSearch ( biBackwardSearch, biBackwardExtendExact )
-import BiFMIndex.Types ( BiFMIndex, BiState(..) )
-import Alignment.BidirectionalSearch ( prefixExtension, prefixMismatch )
+import BiFMIndex.BiBackwardSearch ( biBackwardExtendExact )
+import BiFMIndex.BiForwardSearch ( biForwardExtendExact )
+import BiFMIndex.Types ( BiFMIndex(..), BiState(..), BiRange(..) )
+import Alignment.BidirectionalSearch ( prefixExtension, prefixMismatch, suffixExtension )
 
--- | Step-by-step walkthrough of the 2-mismatch search for pattern
---   "dignifica" against a text that contains two occurrences of it: one with
---   mismatches at pattern positions 0 and 1 ("xxgnifica"), one with
---   mismatches at positions 1 and 4 ("dxgnxfica").
+-- | Print one (state, (start, end)) branch of the search: the slice
+--   P[start..end) of the read that this branch currently represents, the
+--   FM-index range it corresponds to, and the positions in T where it
+--   actually occurs (obtained via 'locate').
+{-@ ignore showBranch @-}
+showBranch :: (BiState, (Int, Int)) -> IO ()
+showBranch (st, (start, end)) = do
+  let br       = biRange st
+  let (lo, hi) = range br
+  let occs
+        | lo < hi   = show (locate (fmidx (biIndex st)) lo hi)
+        | otherwise = "[]  (no occurrences left)"
+  putStrLn $ "    P[" ++ show start ++ ".." ++ show end ++ ") = " ++ show (pattern br)
+           ++ "   range=" ++ show (lo, hi) ++ "   positions in T=" ++ occs
+
+-- | Walkthrough of approximate matching for the read P = "banana" against
+--   the text T = "bananacanana", with one allowed substitution (k = 1).
 --
---   At every step we pass the whole pattern @p@, even though the entries in
---   a list can sit at different positions: both 'prefixExtension' and
---   'prefixMismatch' index into it absolutely from each entry's own @pos@,
---   so a single shared call handles the whole (possibly mixed-position)
---   branch list at once.
-{-@ ignore runDignificaWalkthrough @-}
-runDignificaWalkthrough :: BiFMIndex -> IO ()
-runDignificaWalkthrough bi = do
-  let p       = "dignifica"
+--   By the pigeonhole argument, splitting P into k+1 = 2 pieces guarantees
+--   that at least one of them occurs exactly. Here we search both pieces
+--   as seeds and extend each of them over the rest of P:
+--     * P1 = "ban" = P[0..3), extended to the right with 'suffixExtension'.
+--     * P2 = "ana" = P[3..6), extended to the left with 'prefixExtension'
+--       and 'prefixMismatch'.
+--
+--   T contains two occurrences of interest: "banana" itself at position 0
+--   (an exact match), and "canana" at position 6, which differs from P
+--   only in its first character (a match at Hamming distance 1).
+{-@ ignore runBananaWalkthrough @-}
+runBananaWalkthrough :: BiFMIndex -> IO ()
+runBananaWalkthrough bi = do
+  let t       = "bananacanana"
+  let p       = "banana"
   let initial = initializeBiState bi
 
-  putStrLn "\n=== Walkthrough: pattern \"dignifica\", 2 allowed mismatches ==="
-  putStrLn $ "Patron: " ++ show p
+  putStrLn "\n=== Walkthrough: read P = \"banana\" against T = \"bananacanana\", k = 1 ==="
+  putStrLn $ "Text T: " ++ show t
+  putStrLn $ "Read P: " ++ show p
+  putStrLn "Partition into k+1 = 2 pieces: P1 = \"ban\" = P[0..3), P2 = \"ana\" = P[3..6)."
 
-  -- 1. biBackwardExtendExact: exact match of the error-free suffix "ica".
-  let suffix = "ica"
-  let pos1   = length p - length suffix
-  let st1    = biBackwardExtendExact initial suffix
-  putStrLn $ "\n1. biBackwardExtendExact " ++ show suffix ++ " (pos=" ++ show pos1 ++ "):"
-  print (range st1)
+  -- Seed 1: P1 = "ban" -------------------------------------------------
+  putStrLn "\n--- Seed 1: P1 = \"ban\" ---"
 
-  -- 2. prefixExtension: extend left, checkpointing at every narrowing/wall.
-  let e2 = prefixExtension [(st1, pos1)] p
-  putStrLn "\n2. prefixExtension:"
-  mapM_ (\(st, pos) -> putStrLn $ show pos ++ " -> " ++ show (range st)) e2
+  putStrLn "1. Exact search of P1 with biBackwardExtendExact:"
+  let st1 = biBackwardExtendExact initial "ban"
+  showBranch (st1, (0, 3))
 
-  -- 3. prefixMismatch: try a mismatch right before each checkpoint. e2 has
-  --    entries at different positions, but prefixMismatch now looks up each
-  --    one's own correct character via `p !! (pos - 1)`, so one shared call
-  --    over the whole list (no concatMap needed) is enough.
-  let e3 = prefixMismatch e2 p
-  putStrLn "\n3. prefixMismatch:"
-  mapM_ (\(st, pos) -> putStrLn $ show pos ++ " -> " ++ show (range st)) e3
+  putStrLn "\n2. suffixExtension: grow the seed to the right, one character of P"
+  putStrLn "   at a time. \"ban\" occurs only once in T, so every step below stays"
+  putStrLn "   exact (the range never narrows): the seed extends all the way to a"
+  putStrLn "   full, exact occurrence of P without ever needing a mismatch."
+  let e2 = suffixExtension [(st1, (0, 3))] p
+  mapM_ showBranch e2
 
-  -- 4. prefixExtension: extend each mismatch branch to its next wall. e3 has
-  --    entries at different positions, but prefixExtension now walks each
-  --    one from its own `pos - 1` down to 0 within the shared p, so one call
-  --    over the whole list is enough.
-  let e4 = prefixExtension e3 p
-  putStrLn "\n4. prefixExtension:"
-  mapM_ (\(st, pos) -> putStrLn $ show pos ++ " -> " ++ show (range st)) e4
+  -- Seed 2: P2 = "ana" -------------------------------------------------
+  putStrLn "\n--- Seed 2: P2 = \"ana\" ---"
 
-  -- 5. prefixMismatch: the second mismatch per branch, same reasoning as (3).
+  putStrLn "3. Exact search of P2 with biForwardExtendExact:"
+  let st2 = biForwardExtendExact initial "ana"
+  showBranch (st2, (3, 6))
+
+  putStrLn "\n4. prefixExtension: grow the seed to the left, one character of P at"
+  putStrLn "   a time. \"ana\" occurs four times in T, but not all four are preceded"
+  putStrLn "   by the same characters of P, so the range narrows along the way."
+  putStrLn "   Each narrowing step is recorded as a checkpoint -- the state just"
+  putStrLn "   before the failed exact addition -- for a later mismatch to resume"
+  putStrLn "   from; the walk itself keeps going with the smaller, still-exact range."
+  let e4 = prefixExtension [(st2, (3, 6))] p
+  mapM_ showBranch e4
+
+  putStrLn "\n5. prefixMismatch: from each checkpoint recorded in step 4, try every"
+  putStrLn "   other alphabet character at that position, spending the mismatch"
+  putStrLn "   budget (k = 1). One of the resulting branches reaches P[0..6) with"
+  putStrLn "   pattern \"canana\" at position 6: the approximate occurrence of P at"
+  putStrLn "   Hamming distance 1 that this seed was looking for. The remaining"
+  putStrLn "   branches are partial re-explorations of the exact occurrence already"
+  putStrLn "   found in full via seed 1."
   let e5 = prefixMismatch e4 p
-  putStrLn "\n5. prefixMismatch:"
-  mapM_ (\(st, pos) -> putStrLn $ show pos ++ " -> " ++ show (range st)) e5
+  mapM_ showBranch e5
 
-  -- 6. prefixExtension: final exact extension down to the start of p.
+  putStrLn "\n6. prefixExtension: keep growing the step-5 branches to the left, to"
+  putStrLn "   check whether \"babana\" or \"bacana\" -- the two ways of completing"
+  putStrLn "   \"bana\"/\"cana\" back to a full occurrence of P -- actually occur in T."
+  putStrLn "   \"cana\" first extends exactly to \"acana\" (which does occur), then"
+  putStrLn "   fails on the next character: \"bacana\" is not in T, so it stops one"
+  putStrLn "   character short. \"bana\" fails immediately: it sits at the very start"
+  putStrLn "   of T, so there is no character to its left at all, and \"babana\" is"
+  putStrLn "   ruled out the same way. Only the branch already at P[0..6) -- the"
+  putStrLn "   \"canana\" match found in step 5 -- survives untouched."
   let e6 = prefixExtension e5 p
-  putStrLn "\n6. prefixExtension (final):"
-  mapM_ (\(st, pos) -> putStrLn $ show pos ++ " -> " ++ show (range st)) e6
-
+  mapM_ showBranch e6
 
 main :: IO ()
 main = do
-  let txt = "el xnxmoramiento es una locura"
-  let bwt_txt = buildBWT txt
-  let cTab = cTable bwt_txt
-  let occTab = occTable bwt_txt
-  let suffix_array = buildSA txt
-  putStrLn $ "Suffix Array: " ++ show suffix_array
-  let fidx = FMIndex bwt_txt cTab occTab suffix_array undefined undefined
-  let n = length bwt_txt
-
-  putStrLn $ "Text: " ++ show txt
-  putStrLn $ "BWT: " ++ show bwt_txt
-  putStrLn $ "C Table: " ++ show cTab
-  putStrLn $ "Occ Table: " ++ show occTab
-  putStrLn $ "FM-Index built with BWT length: " ++ show n
-  let patt = "a"
-  let Range lo hi = backwardSearch patt fidx (Range 0 n)
-  putStrLn $ "Pattern: " ++ show patt
-  putStrLn $ "Occurrences in BWT range: [" ++ show lo ++ ", " ++ show hi ++ "]"
-  putStrLn $ if lo < hi && hi <= length (sa fidx)
-                then "Original positions of pattern occurrences: " ++ show (locate fidx lo hi)
-                else ("The index range is invalid: lo = " ++ show lo ++ ", hi = " ++ show hi ++ ", sa length = " ++ show (length (sa fidx)))
-
-  let bi = buildBiFMIndex txt
-  putStrLn $ "BiFMIndex: " ++ show bi
-  let state_0 = initializeBiState bi
-  putStrLn $ "Initial BiRange: " ++ show (range state_0)
-
-  let state_1 = biBackwardSearch state_0 'n'
-  putStrLn $ "Bidirectional backward search: " ++ show (range state_1)
-  -- let state_2 = biForwardSearch state_1 'a'
-  -- putStrLn $ "Bidirectional forward search: " ++ show (range state_2)
-  -- let state_3 = biBackwardSearch state_2 'a'
-  -- putStrLn $ "Bidirectional backward search: " ++ show (range state_3)
-  -- let state_4 = biForwardSearch state_3 'n'
-  -- putStrLn $ "Bidirectional forward search: " ++ show (range state_4)
-
-  let txt2 = "el trabajo no xxgnifica, lo que dxgnxfica es el tiempo libre"
-  let bi2  = buildBiFMIndex txt2
-  runDignificaWalkthrough bi2
+  let t  = "bananacanana"
+  let bi = buildBiFMIndex t
+  runBananaWalkthrough bi

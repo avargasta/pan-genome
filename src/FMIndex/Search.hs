@@ -3,46 +3,37 @@
 
 -- | Exact backward search using FM-Index
 module FMIndex.Search
-  ( backwardSearch
+  ( backwardStep
+  , backwardSearch
   , locate
   ) where
 
-import Data.RList
 import FMIndex.Types
-import FMIndex.Tables (cLookup, occLookup)
+import FMIndex.Tables (cLookup, occLookup, incrOccTab)
 import Data.ProofCombinators
 
--- | Perform backward search of a pattern in FM-Index
--- Returns a range (sp, ep) in the BWT where the pattern occurs
-{-@ backwardSearch :: p:String -> fidx:FMIndex -> {v:(Nat, Nat) | fst v <= snd v && snd v <= len (bwt fidx) } -> {v:(Nat, Nat) | fst v <= snd v && snd v <= len (bwt fidx)} @-}
-backwardSearch :: String -> FMIndex -> (Int, Int) -> (Int, Int)
-backwardSearch pattern fidx@(FMIndex l cTab occTab sa inv) (lo, hi) = go (reverse pattern) lo hi
-  where
-    -- Recursive helper function
-    n = length l
-    {-@ go :: [Char] 
-           -> lo:Nat
-           -> hi:{Nat | hi <= len l && lo <= hi } 
-          -> {v:(Nat, Nat) | fst v <= snd v && snd v <= len l } @-}
-    go :: [Char] -> Int -> Int -> (Int, Int)
-    go [] lo hi = (lo, hi)  -- Base case: no more characters left
-    go (c:cs) lo hi
-      | lo > hi  = (0,0)  -- No match
-      | otherwise =
-          let lo' = cLookup c cTab + occLookup c lo occTab {- <= than the number of times c appears -}
-              hi' = cLookup c cTab + occLookup c hi occTab
-          in go cs lo' (hi' ? inv c hi  
-                            ? incrOccTab c lo hi occTab)
+-- | Extend a range by a single character -- one step of backward search.
+{-@ reflect backwardStep @-}
+{-@ backwardStep :: c:Char -> fidx:FMIndex -> r:{v:Range | hi v <= len (bwt fidx)}
+                 -> {v:Range | hi v <= len (bwt fidx) && hi v - lo v == occLookup c (hi r) (occtab fidx) - occLookup c (lo r) (occtab fidx)} @-}
+backwardStep :: Char -> FMIndex -> Range -> Range
+backwardStep c fidx (Range sp ep) =
+  Range (cLookup c (ctab fidx) + occLookup c sp (occtab fidx))
+        (cLookup c (ctab fidx) + occLookup c ep (occtab fidx)
+          ? inv fidx c ep
+          ? incrOccTab c sp ep (occtab fidx))
 
-{-@ incrOccTab :: c:Char 
-         -> i:Nat
-         -> j:{Nat | i <= j}
-         -> table:[(Char, {v:SortedList Nat | j < len v})] 
-         -> { occLookup c i table <= occLookup c j table }  @-}
-incrOccTab :: Char -> Int -> Int -> [(Char, [Int])] -> ()
-incrOccTab c i j table = case lookup c table of
-  Just xs -> incrLookUpSorted xs i j
-  Nothing -> ()
+-- | Perform backward search of a pattern in FM-Index
+-- Returns a range [sp, ep] in the BWT where the pattern occurs
+{-@ backwardSearch :: p:String -> fidx:FMIndex -> {v:Range | hi v <= len (bwt fidx)} -> {v:Range | hi v <= len (bwt fidx)} @-}
+backwardSearch :: String -> FMIndex -> Range -> Range
+backwardSearch pattern fidx r0 = go (reverse pattern) r0
+  where
+    {-@ go :: [Char] -> r:{v:Range | hi v <= len (bwt fidx)}
+           -> {v:Range | hi v <= len (bwt fidx)} @-}
+    go :: [Char] -> Range -> Range
+    go []     r = r  -- Base case: no more characters left
+    go (c:cs) r = go cs (backwardStep c fidx r)
 
 -- | Convert a range of BWT indices to original text positions
 -- Given a range [lo, hi) from backwardSearch, return the original positions

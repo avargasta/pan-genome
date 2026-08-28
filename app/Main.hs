@@ -3,8 +3,8 @@
 module Main where
 
 import FMIndex.BWT ( buildBWT, buildSA )
-import FMIndex.Types ( FMIndex(..) )
-import FMIndex.Tables ( cTable, occTable )      
+import FMIndex.Types ( FMIndex(..), Range(..) )
+import FMIndex.Tables ( cTable, occTable )
 import FMIndex.Search ( backwardSearch, locate)
 import BiFMIndex.BiFMIndex ( buildBiFMIndex, initializeBiState )
 -- import BiFMIndex.BiForwardSearch ( biForwardSearch )
@@ -78,7 +78,7 @@ main = do
   let occTab = occTable bwt_txt
   let suffix_array = buildSA txt
   putStrLn $ "Suffix Array: " ++ show suffix_array
-  let fidx = FMIndex bwt_txt cTab occTab suffix_array undefined
+  let fidx = FMIndex bwt_txt cTab occTab suffix_array undefined undefined
   let n = length bwt_txt
 
   putStrLn $ "Text: " ++ show txt
@@ -87,7 +87,7 @@ main = do
   putStrLn $ "Occ Table: " ++ show occTab
   putStrLn $ "FM-Index built with BWT length: " ++ show n
   let patt = "a"
-  let (lo, hi) = backwardSearch patt fidx (0, n)
+  let Range lo hi = backwardSearch patt fidx (Range 0 n)
   putStrLn $ "Pattern: " ++ show patt
   putStrLn $ "Occurrences in BWT range: [" ++ show lo ++ ", " ++ show hi ++ "]"
   putStrLn $ if lo < hi && hi <= length (sa fidx)

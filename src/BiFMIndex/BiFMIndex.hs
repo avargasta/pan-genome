@@ -4,10 +4,9 @@ module BiFMIndex.BiFMIndex where
 
 import FMIndex.Tables (cTable, occTable, cLookup, occLookup)
 import FMIndex.BWT    (buildBWT)
-import FMIndex.Types ( FMIndex, bwt )
+import FMIndex.Types ( FMIndex, bwt, Range(..) )
 import FMIndex.FMIndex ( buildFMIndex )
 import BiFMIndex.Types ( BiFMIndex(..), BiRange(..), BiState(..) )
-import Data.ProofCombinators ((?))
 
 buildBiFMIndex :: [Char] -> BiFMIndex
 buildBiFMIndex t = BiFMIndex
@@ -20,8 +19,8 @@ initializeBiState :: BiFMIndex -> BiState
 initializeBiState bi = BiState
   { index = bi
   , range = BiRange
-    { origRange = (0, nFwd)
-    , revRange  = (0, nBwd)
+    { origRange = Range 0 nFwd
+    , revRange  = Range 0 nBwd
     , pattern   = ""
     }
   }

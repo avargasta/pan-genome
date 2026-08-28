@@ -3,38 +3,26 @@
 
 module BiFMIndex.BiBackwardSearch where
 
-import FMIndex.Search (backwardSearch)
-import FMIndex.Types (bwt, ctab)
+import FMIndex.Search (backwardStep)
+import FMIndex.Types (FMIndex, bwt, ctab, occtab, offsetBound, Range(..))
+import FMIndex.Tables (occLookup, offsetTable)
 import BiFMIndex.Types (BiFMIndex(..), BiRange(..), BiState(..))
 import Data.ProofCombinators ((?))
 
+-- | Bidirectional BWT partition theorem (Lam et al. 2009): the occurrences
+-- of `symbol`, together with everything smaller than it, within the
+-- current original range, never exceed that range's width. Made checkable
+-- by injecting the fact from the original index's own 'offsetBound' ghost
+-- field -- pinned to 'offsetTable', the very traversal computed below, so
+-- the assumption can't be misapplied to a value the algorithm didn't
+-- actually produce.
+{-@ reflect offsetBackward @-}
 {-@ offsetBackward :: st:BiState -> symbol:Char -> Nat @-}
 offsetBackward :: BiState -> Char -> Int
-offsetBackward st symbol = go (ctab (orig (index st)))
+offsetBackward st symbol = offsetTable symbol (lo rng) (hi rng) (ctab fi) (occtab fi)
   where
     rng = origRange (range st)
-    fi = orig (index st)
-
-    {-@ go :: table:[(Char, Nat)] -> Nat @-}
-    go :: [(Char, Int)] -> Int
-    go [] = 0
-    go ((c, _):cs)
-      | c < symbol = let (s, e) = backwardSearch [c] fi rng
-                     in (e - s) + go cs
-      | otherwise  = go cs
-
--- | Bidirectional BWT partition theorem (Lam et al. 2009):
--- rLo + offset + (noHi - noLo) <= rHi, i.e., the new upper
--- bound of the reverse range lies within the current reverse range.
-{-@ assume countBound
-      :: off:Nat
-      -> noLo:Nat
-      -> noHi:{Nat | noLo <= noHi}
-      -> rLo:Nat
-      -> rHi:{Nat | rLo <= rHi}
-      -> {v:() | rLo + off + noHi - noLo <= rHi} @-}
-countBound :: Int -> Int -> Int -> Int -> Int -> ()
-countBound _ _ _ _ _ = ()
+    fi  = orig (index st)
 
 -- | Extend the current pattern with one symbol.
 {-@ biBackwardSearch :: BiState -> Char -> BiState @-}
@@ -52,16 +40,16 @@ biBackwardSearch st symbol =
     bi            = index st
     r             = range st
     nextPattern   = [symbol] ++ pattern r
-    nextOrigRange = backwardSearch [symbol] (orig bi) (origRange r)
+    nextOrigRange = backwardStep symbol (orig bi) (origRange r)
 
-    rLo    = fst (revRange r)
-    rHi    = snd (revRange r)
-    offset = offsetBackward st symbol
-    noLo   = fst nextOrigRange
-    noHi   = snd nextOrigRange
+    rLo    = lo (revRange r)
+    rHi    = hi (revRange r)
+    offset = offsetBackward st symbol ? offsetBound (orig bi) symbol (origRange r) (ctab (orig bi))
+    noLo   = lo nextOrigRange
+    noHi   = hi nextOrigRange
     nrLo          = rLo + offset
-    nrHi          = nrLo + (noHi - noLo) ? countBound offset noLo noHi rLo rHi
-    nextRevRange  = (nrLo, nrHi)
+    nrHi          = nrLo + (noHi - noLo)
+    nextRevRange  = Range nrLo nrHi
 
 {-@ biBackwardExtendExact :: BiState -> String -> BiState @-}
 biBackwardExtendExact :: BiState -> String -> BiState

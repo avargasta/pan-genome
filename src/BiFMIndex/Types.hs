@@ -2,7 +2,19 @@
 
 module BiFMIndex.Types where
 
-import FMIndex.Types ( FMIndex, bwt )
+import FMIndex.Types ( FMIndex, bwt, Range(..) )
+
+data BiRange = BiRange
+  { origRange :: Range
+  , revRange :: Range
+  , pattern  :: String
+  }
+
+{-@ data BiRange = BiRange
+  { origRange :: Range
+  , revRange :: Range
+  , pattern  :: [Char]
+  } @-}
 
 data BiFMIndex = BiFMIndex
   { orig :: FMIndex
@@ -14,30 +26,18 @@ data BiFMIndex = BiFMIndex
   , rev  :: {r:FMIndex | len (bwt r) == len (bwt orig)}
   } @-}
 
-data BiRange = BiRange
-  { origRange :: (Int, Int)
-  , revRange :: (Int, Int)
-  , pattern  :: String
-  }
-
-{-@ data BiRange = BiRange
-  { origRange :: (Nat, Nat)
-  , revRange :: (Nat, Nat)
-  , pattern  :: [Char]
-  } @-}
-
 data BiState = BiState
   { index :: BiFMIndex
   , range :: BiRange
   }
-  
+
+-- "lo <= hi" for each range is already guaranteed by the Range type itself;
+-- only the BWT bound and the size-coupling invariant need to be stated here.
 {-@ data BiState = BiState
   { index :: BiFMIndex
-  , range :: {r:BiRange | fst (origRange r) <= snd (origRange r)
-                        && snd (origRange r) <= len (bwt (orig index))
-                        && fst (revRange r) <= snd (revRange r)
-                        && snd (revRange r) <= len (bwt (rev index))
-                        && snd (origRange r) - fst (origRange r) == snd (revRange r) - fst (revRange r) }
+  , range :: {r:BiRange | hi (origRange r) <= len (bwt (orig index))
+                        && hi (revRange r)  <= len (bwt (rev index))
+                        && hi (origRange r) - lo (origRange r) == hi (revRange r) - lo (revRange r) }
   } @-}
 
 --------------------------------------------------------------------------

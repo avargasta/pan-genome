@@ -4,7 +4,7 @@ module Alignment.BidirectionalSearch where
 
 import BiFMIndex.Types (BiFMIndex(..), BiRange(..), BiState(..))
 import BiFMIndex.BiBackwardSearch (biBackwardSearch)
-import FMIndex.Types (ctab)
+import FMIndex.Types (ctab, Range(..))
 
 -- Me gustaría tener:
 -- Extend prefix ranges from the last character of String down to the first character, filtering empty ranges.
@@ -28,7 +28,7 @@ isEmptyRange r = rangeWidth r <= 0
 
 -- | Number of occurrences currently covered by a range.
 rangeWidth :: BiRange -> Int
-rangeWidth r = snd (origRange r) - fst (origRange r)
+rangeWidth r = hi (origRange r) - lo (origRange r)
 
 -- | All alphabet characters that differ from the given one (and from the
 --   sentinel '$'). These are the candidate substitutions at a mismatch.

@@ -2,13 +2,11 @@
 
 module BiFMIndex.BiFMIndex where
 
-import FMIndex.Tables (cTable, occTable, cLookup, occLookup)
-import FMIndex.BWT    (buildBWT)
-import FMIndex.Types ( FMIndex, bwt, Range(..) )
+import FMIndex.Types ( bwt, Range(..) )
 import FMIndex.FMIndex ( buildFMIndex )
 import BiFMIndex.Types ( BiFMIndex(..), BiRange(..), BiState(..) )
 
-buildBiFMIndex :: [Char] -> BiFMIndex
+buildBiFMIndex :: String -> BiFMIndex
 buildBiFMIndex t = BiFMIndex
   { fmidx  = buildFMIndex t
   , fmidxR = buildFMIndex (reverse t)

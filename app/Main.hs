@@ -3,7 +3,7 @@
 module Main where
 
 import BiFMIndex.BiFMIndex ( buildBiFMIndex )
-import Alignment.Search ( approximateSearch )
+import ApproximateSearch.ApproximateSearch ( approximateSearch )
 
 -- | T is built from five variants of P = "abcdef" (separated by '0' so they
 --   can't bleed into one another), each at a known Hamming distance from P:

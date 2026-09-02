@@ -13,7 +13,7 @@ data BiRange = BiRange
 {-@ data BiRange = BiRange
   { range   :: Range
   , rangeR  :: Range
-  , pattern :: [Char]
+  , pattern :: String
   } @-}
 
 data BiFMIndex = BiFMIndex
@@ -23,7 +23,7 @@ data BiFMIndex = BiFMIndex
 
 {-@ data BiFMIndex = BiFMIndex
   { fmidx  :: FMIndex
-  , fmidxR :: {r:FMIndex | len (bwt r) == len (bwt fmidx)}
+  , fmidxR :: {v:FMIndex | len (bwt v) == len (bwt fmidx)}
   } @-}
 
 data BiState = BiState

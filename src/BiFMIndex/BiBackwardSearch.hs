@@ -4,15 +4,15 @@
 module BiFMIndex.BiBackwardSearch where
 
 import FMIndex.Search (backwardStep)
-import FMIndex.Types (FMIndex, bwt, ctab, occtab, offsetBound, Range(..))
-import FMIndex.Tables (occLookup, offsetTable)
+import FMIndex.Types (ctab, occtab, partitionBound, Range(..))
+import FMIndex.Tables (offsetTable)
 import BiFMIndex.Types (BiFMIndex(..), BiRange(..), BiState(..))
 import Data.ProofCombinators ((?))
 
 -- | Bidirectional BWT partition theorem (Lam et al. 2009): the occurrences
 -- of `symbol`, together with everything smaller than it, within the
 -- current original range, never exceed that range's width. Made checkable
--- by injecting the fact from the original index's own 'offsetBound' ghost
+-- by injecting the fact from the original index's own 'partitionBound' ghost
 -- field -- pinned to 'offsetTable', the very traversal computed below, so
 -- the assumption can't be misapplied to a value the algorithm didn't
 -- actually produce.
@@ -25,9 +25,9 @@ offsetBackward st symbol = offsetTable symbol (lo rng) (hi rng) (ctab fi) (occta
     fi  = fmidx (biIndex st)
 
 -- | Extend the current pattern with one symbol.
-{-@ biBackwardSearch :: BiState -> Char -> BiState @-}
-biBackwardSearch :: BiState -> Char -> BiState
-biBackwardSearch st symbol =
+{-@ biBackwardStep :: BiState -> Char -> BiState @-}
+biBackwardStep :: BiState -> Char -> BiState
+biBackwardStep st symbol =
   BiState
     { biIndex = bi
     , biRange = BiRange
@@ -42,17 +42,17 @@ biBackwardSearch st symbol =
     nextPattern = [symbol] ++ pattern r
     nextRange   = backwardStep symbol (fmidx bi) (range r)
 
-    Range loR hiR = rangeR r
-    offset = offsetBackward st symbol ? offsetBound (fmidx bi) symbol (range r) (ctab (fmidx bi))
+    Range loR _ = rangeR r
+    offset = offsetBackward st symbol ? partitionBound (fmidx bi) symbol (range r) (ctab (fmidx bi))
     Range lo' hi' = nextRange
     loR'        = loR + offset
     hiR'        = loR' + (hi' - lo')
     nextRangeR  = Range loR' hiR'
 
-{-@ biBackwardExtendExact :: BiState -> String -> BiState @-}
-biBackwardExtendExact :: BiState -> String -> BiState
-biBackwardExtendExact st s = go st (reverse s)
+{-@ biBackwardSearchExact :: BiState -> String -> BiState @-}
+biBackwardSearchExact :: BiState -> String -> BiState
+biBackwardSearchExact st s = go st (reverse s)
   where
     {-@ go :: BiState -> String -> BiState @-}
     go acc []     = acc
-    go acc (c:cs) = go (biBackwardSearch acc c) cs
+    go acc (c:cs) = go (biBackwardStep acc c) cs

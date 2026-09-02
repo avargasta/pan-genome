@@ -17,21 +17,21 @@ import Data.ProofCombinators
 {-@ backwardStep :: c:Char -> fidx:FMIndex -> r:{v:Range | hi v <= len (bwt fidx)}
                  -> {v:Range | hi v <= len (bwt fidx) && hi v - lo v == occLookup c (hi r) (occtab fidx) - occLookup c (lo r) (occtab fidx)} @-}
 backwardStep :: Char -> FMIndex -> Range -> Range
-backwardStep c fidx (Range sp ep) =
-  Range (cLookup c (ctab fidx) + occLookup c sp (occtab fidx))
-        (cLookup c (ctab fidx) + occLookup c ep (occtab fidx)
-          ? inv fidx c ep
-          ? incrOccTab c sp ep (occtab fidx))
+backwardStep c fidx (Range lo hi) =
+  Range (cLookup c (ctab fidx) + occLookup c lo (occtab fidx))
+        (cLookup c (ctab fidx) + occLookup c hi (occtab fidx)
+          ? stepBound fidx c hi
+          ? incrOccTab c lo hi (occtab fidx))
 
 -- | Perform backward search of a pattern in FM-Index
--- Returns a range [sp, ep] in the BWT where the pattern occurs
+-- Returns a range [lo, hi) in the BWT where the pattern occurs
 {-@ backwardSearch :: p:String -> fidx:FMIndex -> {v:Range | hi v <= len (bwt fidx)} -> {v:Range | hi v <= len (bwt fidx)} @-}
 backwardSearch :: String -> FMIndex -> Range -> Range
 backwardSearch pattern fidx r0 = go (reverse pattern) r0
   where
-    {-@ go :: [Char] -> r:{v:Range | hi v <= len (bwt fidx)}
+    {-@ go :: String -> r:{v:Range | hi v <= len (bwt fidx)}
            -> {v:Range | hi v <= len (bwt fidx)} @-}
-    go :: [Char] -> Range -> Range
+    go :: String -> Range -> Range
     go []     r = r  -- Base case: no more characters left
     go (c:cs) r = go cs (backwardStep c fidx r)
 

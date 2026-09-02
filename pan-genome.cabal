@@ -23,8 +23,11 @@ library
       , BiFMIndex.BiFMIndex
       , BiFMIndex.BiForwardSearch
       , BiFMIndex.BiBackwardSearch
-      , Alignment.BidirectionalSearch
-      , Alignment.Search
+      , ApproximateSearch.Types
+      , ApproximateSearch.PrefixOperations
+      , ApproximateSearch.SuffixOperations
+      , ApproximateSearch.SeedPieces
+      , ApproximateSearch.ApproximateSearch
   hs-source-dirs:
       src
   ghc-options:
